@@ -144,5 +144,5 @@ if __name__ == "__main__":
     model.cuda()
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
-    stats_dict, model = train(1, model, stats_path, train_loader, val_loader, optimizer, criterion,
+    stats_dict, model = train(epochs, model, stats_path, train_loader, val_loader, optimizer, criterion,
                               len_train, len_val, latest_model_path, best_model_path, optim_path)
