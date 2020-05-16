@@ -26,9 +26,15 @@ class BaseModel(nn.Module):
         self.fc2 = nn.Linear(1024, 8)
 
         self.dropout = nn.Dropout(p=0.5)
+        self.embedding = nn.Embedding(21, 21)
 
 
     def forward(self, x):
+        # embed one hot
+        one_hot = x[:, 0:21, 0].argmax(axis=1)
+        embedded = self.embedding(one_hot.long()).unsqueeze(2)
+        x[:, 0:21, :] = embedded
+
         # Local Block
         local_block_3 = self.cnn_1d_3(x)
         local_block_5 = self.cnn_1d_5(x)
