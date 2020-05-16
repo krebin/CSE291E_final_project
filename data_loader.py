@@ -10,14 +10,27 @@ from PIL import Image
 
 class ProteinDataset(data.Dataset):
     def __init__(self, protein_data, ids):
-        
-        all_encodings = np.array([], dtype=np.float32).reshape(0, 50)
-        all_labels = np.array([], dtype=np.int32).reshape(0, 8)
-        
-        for id in ids:
+
+        protein_lengths = 0
+        for i, id in enumerate(ids):
             d = protein_data[id]
-            all_encodings = np.vstack((all_encodings, d["protein_encoding"]))
-            all_labels =  np.vstack((all_labels, d["secondary_structure_onehot"]))
+            protein_lengths += d["protein_length"]
+
+        all_encodings = np.zeros([protein_lengths, 50])
+        all_labels = np.zeros([protein_lengths, 8])
+
+        total_length = 0
+        for i, id in enumerate(ids):
+            if i % 250 == 0:
+                print("Stacking {0}/{1} proteins".format(i, len(ids)))
+
+            d = protein_data[id]
+            protein_length = d["protein_length"]
+
+            all_encodings[total_length:total_length + protein_length] = d["protein_encoding"]
+            all_labels[total_length:total_length + protein_length] = d["secondary_structure_onehot"]
+
+            total_length += protein_length
         
         self.all_encodings = all_encodings.astype(np.float32)
         self.all_labels = all_labels.astype(np.int32)
