@@ -100,7 +100,7 @@ class BaseModel(nn.Module):
         O2 = (F + B).view([x.shape[0], 700, -1])
 
         # BGRU Block 2
-        x = torch.cat((x, O2), dim=2).permute(0, 2, 1)
+        x = torch.cat((O1, O2), dim=2).permute(0, 2, 1)
         x = nn.functional.relu(self.cnn_1d_1_2(x))
         x = self.dropout(x)
         # x = self.bnorm3(x)
