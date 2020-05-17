@@ -17,7 +17,7 @@ def train(epochs, model, stats_path,
           optimizer, criterion,
           len_train, len_val,
           latest_model_path,
-          best_model_path, optim_path):
+          best_model_path, optim_path, device):
 
     fmt_string = "Epoch[{0}/{1}], Batch[{3}/{4}], Train Loss: {2}"
 
@@ -35,7 +35,7 @@ def train(epochs, model, stats_path,
         start_epoch = 0
 
         # See loss before training
-        accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs)
+        accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs, device)
 
         # Update statistics dict
         stats_dict["valid"][-1]["accs"] = accs
@@ -51,12 +51,12 @@ def train(epochs, model, stats_path,
         for iter, (X, Y, seq_lens) in enumerate(train_loader):
             optimizer.zero_grad()
 
-            X = X.view([-1, 51, 700]).cuda()
+            X = X.view([-1, 51, 700]).to(device)
             Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
 
-            T = Y.argmax(dim=2).long().cuda()
+            T = Y.argmax(dim=2).long().to(device)
             loss = criterion(outputs.permute(0, 2, 1), T)
             train_loss += (loss.item() * len(X))
 
@@ -84,7 +84,7 @@ def train(epochs, model, stats_path,
         stats_dict["train"][epoch]["acc"] = np.mean(labels == predictions)
 
         # The validation stats after additional epoch
-        accs, val_loss = val(epoch, model, val_loader, len_val, criterion, epochs)
+        accs, val_loss = val(epoch, model, val_loader, len_val, criterion, epochs, device)
 
         # Update statistics dict
         stats_dict["valid"][epoch]["accs"] = accs
@@ -114,7 +114,7 @@ def train(epochs, model, stats_path,
     return stats_dict, model
 
 
-def val(epoch, model, val_loader, len_val, criterion, epochs):
+def val(epoch, model, val_loader, len_val, criterion, epochs,device):
     # Complete this function - Calculate loss, accuracy and IoU for every epoch
     # Make sure to include a softmax after the output from your model
 
@@ -127,12 +127,12 @@ def val(epoch, model, val_loader, len_val, criterion, epochs):
     with torch.no_grad():
         for iter, (X, Y, seq_lens) in enumerate(val_loader):
 
-            X = X.view([-1, 51, 700]).cuda()
+            X = X.view([-1, 51, 700]).to(device)
             Y = Y.view([-1, 700, 9])
 
-            outputs = model(X)
+            outputs = model(X,device)
 
-            T = Y.argmax(dim=2).long().cuda()
+            T = Y.argmax(dim=2).long().to(device)
             batch_loss = criterion(outputs.permute(0, 2, 1), T).item()           
 
             # Unaverage to do total average later b/c last batch may have unequal number of samples
@@ -159,7 +159,7 @@ def val(epoch, model, val_loader, len_val, criterion, epochs):
     return accs, loss
 
 
-def test(model, test_loader):
+def test(model, test_loader,device):
     all_labels = []
     all_predictions = []
     model.eval()
@@ -167,7 +167,7 @@ def test(model, test_loader):
     fmt_string = "Batch[{0}/{1}]"
     with torch.no_grad():
         for iter, (X, Y, seq_lens) in enumerate(test_loader):
-            X = X.view([-1, 51, 700]).cuda()
+            X = X.view([-1, 51, 700]).to(device)
             Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
