@@ -54,7 +54,7 @@ def train(epochs, model, stats_path,
             X = X.view([-1, 51, 700]).to(device)
             Y = Y.view([-1, 700, 9])
 
-            outputs = model(X)
+            outputs = model(X, device)
 
             T = Y.argmax(dim=2).long().to(device)
             loss = criterion(outputs.permute(0, 2, 1), T)

@@ -11,7 +11,7 @@ class BaseModel(nn.Module):
         self.cnn_1d_3 = nn.Conv1d(in_channels=51, out_channels=100, stride=1, kernel_size=3, padding=1, bias=True)
         self.cnn_1d_5 = nn.Conv1d(in_channels=51, out_channels=100, stride=1, kernel_size=5, padding=2, bias=True)
         self.cnn_1d_1_1 = nn.Conv1d(in_channels=751, out_channels=500, stride=1, kernel_size=1, bias=True)
-        self.cnn_1d_1_2 = nn.Conv1d(in_channels=1000, out_channels=500, stride=1, kernel_size=1, bias=True)
+        self.cnn_1d_1_2 = nn.Conv1d(in_channels=1500, out_channels=500, stride=1, kernel_size=1, bias=True)
 
         self.gru_f_1 = nn.GRU(input_size=251, hidden_size=250, num_layers=1, batch_first=True)
         self.gru_b_1 = nn.GRU(input_size=251, hidden_size=250, num_layers=1, batch_first=True)
@@ -26,7 +26,7 @@ class BaseModel(nn.Module):
         self.gru_bi_2 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True,bidirectional=True)
         self.gru_bi_3 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True,bidirectional=True)
 
-        self.fc1 = nn.Linear(500, 1024)
+        self.fc1 = nn.Linear(1000, 1024)
         self.fc2 = nn.Linear(1024, 9)
 
         self.dropout = nn.Dropout(p=0.5)
@@ -77,8 +77,7 @@ class BaseModel(nn.Module):
         x = torch.cat((x, O1), dim=2) #! x: 3, 700, 751
         # x = nn.functional.relu(self.cnn_1d_1_1(x.view([-1, 751, 700]))) # ? ReLU here, too?
         x = nn.functional.relu(self.cnn_1d_1_1(x.permute(0,2,1))) # ? ReLU here, too?
-        x = self.dropout(x)
-        # ! x size: 3 x 500 x 700
+        x = self.dropout(x) # ! x size: 3 x 500 x 700
         
         O2, _ = self.gru_bi_2(x.permute(0,2,1))
 
@@ -107,31 +106,34 @@ class BaseModel(nn.Module):
         # ! O2 size: 3 x 700 x 500
         
         # BGRU Block 2
-        x = torch.cat((O1, O2), dim=2).permute(0, 2, 1)
-        x = nn.functional.relu(self.cnn_1d_1_2(x))
-        x = self.dropout(x)
+        # ! O1 size: 3 x 700 x 500
+        # ! O2 size: 3 x 700 x 1000
+        x = torch.cat((O1, O2), dim=2) # ! x size: 3 x 700 x 1500
+        x = nn.functional.relu(self.cnn_1d_1_2(x.permute(0,2,1))) # ! x size: 3 x 500 x 700
+        x = self.dropout(x) # ! x size: 3 x 500 x 700
 
-        h_t_f = torch.zeros(1, x.shape[0], 500).to(device)
-        h_t_b = torch.zeros(1, x.shape[0], 500).to(device)
+        x, _ = self.gru_bi_3(x.permute(0,2,1)) #! x size: bs x 700 x 1000
+        # h_t_f = torch.zeros(1, x.shape[0], 500).to(device)
+        # h_t_b = torch.zeros(1, x.shape[0], 500).to(device)
 
-        h_f = []
-        h_b = []
+        # h_f = []
+        # h_b = []
 
-        x = x.permute([0, 2, 1])
-        T = x.shape[1]
-        for t in range(T):
-            input_t_f = x[:, t, :].unsqueeze(1)
-            input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
+        # x = x.permute([0, 2, 1])
+        # T = x.shape[1]
+        # for t in range(T):
+        #     input_t_f = x[:, t, :].unsqueeze(1)
+        #     input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
 
-            _, h_t_f = self.gru_f_3(input_t_f, h_t_f)
-            _, h_t_b = self.gru_b_3(input_t_b, h_t_b)
+        #     _, h_t_f = self.gru_f_3(input_t_f, h_t_f)
+        #     _, h_t_b = self.gru_b_3(input_t_b, h_t_b)
 
-            h_f.append(h_t_f)
-            h_b.append(h_t_b)
+        #     h_f.append(h_t_f)
+        #     h_b.append(h_t_b)
 
-        F = torch.cat(h_f, dim=2)
-        B = torch.cat(h_b, dim=2)
-        x = (F + B).view([x.shape[0], 700, 500])
+        # F = torch.cat(h_f, dim=2)
+        # B = torch.cat(h_b, dim=2)
+        # x = (F + B).view([x.shape[0], 700, 500])
         x = nn.functional.relu(self.fc1(x))
         x = self.fc2(x)
 
