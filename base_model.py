@@ -13,14 +13,9 @@ class BaseModel(nn.Module):
         self.cnn_1d_1_1 = nn.Conv1d(in_channels=751, out_channels=500, stride=1, kernel_size=1, bias=True)
         self.cnn_1d_1_2 = nn.Conv1d(in_channels=1000, out_channels=500, stride=1, kernel_size=1, bias=True)
 
-        self.gru_f_1 = nn.GRU(input_size=251, hidden_size=250, num_layers=1, batch_first=True)
-        self.gru_b_1 = nn.GRU(input_size=251, hidden_size=250, num_layers=1, batch_first=True)
-
-        self.gru_f_2 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True)
-        self.gru_b_2 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True)
-
-        self.gru_f_3 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True)
-        self.gru_b_3 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True)
+        self.gru_1 = nn.GRU(input_size=251, hidden_size=250, num_layers=1, batch_first=True, bidirectional=True)
+        self.gru_2 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True, bidirectional=True)
+        self.gru_3 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True, bidirectional=True)
 
         self.fc1 = nn.Linear(500, 128)
         self.fc2 = nn.Linear(128, 9)
@@ -43,90 +38,32 @@ class BaseModel(nn.Module):
         local_block_3 = self.cnn_1d_3(x)
         local_block_5 = self.cnn_1d_5(x)
         x = nn.functional.relu(torch.cat((x, local_block_3, local_block_5), dim=1))
-        # x = self.bnorm1(x)
+        x = self.dropout(x)
         x = x.permute(0, 2, 1)
 
         # BGRU
-        T = x.shape[1]
-        h_t_f = torch.zeros(1, x.shape[0], 250).to(device)
-        h_t_b = torch.zeros(1, x.shape[0], 250).to(device)
-
-        h_f = []
-        h_b = []
-
-        for t in range(T):
-            input_t_f = x[:, t, :].unsqueeze(1)
-            input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
-
-            _, h_t_f = self.gru_f_1(input_t_f, h_t_f)
-            _, h_t_b = self.gru_b_1(input_t_b, h_t_b)
-
-            h_f.append(h_t_f)
-            h_b.append(h_t_b)
-
-
-        F = torch.stack(h_f, dim=2).squeeze(0)
-        B = torch.stack(h_b, dim=2).squeeze(0)      
-        O1 = torch.cat((F, B), dim=2)
-
+        h_t = torch.zeros(2, x.shape[0], 250).to(device)
+        O1, _ = self.gru_1(x, h_t)
 
         # BGRU Block 1
         x = torch.cat((x, O1), dim=2)
-        x = nn.functional.relu(self.cnn_1d_1_1(x.permute(0,2,1)))
-        x = self.dropout(x)
-        # x = self.bnorm2(x)
+        x = nn.functional.relu(self.cnn_1d_1_1(x.permute(0, 2, 1)))
+        x = x.permute(0, 2, 1)
 
-        h_t_f = torch.zeros(1, x.shape[0], 500).to(device)
-        h_t_b = torch.zeros(1, x.shape[0], 500).to(device)
+        h_t = torch.zeros(2, x.shape[0], 500).to(device)
 
-        h_f = []
-        h_b = []
-
-        x = x.permute([0, 2, 1])
-        T = x.shape[1]
-        for t in range(T):
-            input_t_f = x[:, t, :].unsqueeze(1)
-            input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
-
-
-            _, h_t_f = self.gru_f_2(input_t_f, h_t_f)
-            _, h_t_b = self.gru_b_2(input_t_b, h_t_b)
-
-            h_f.append(h_t_f)
-            h_b.append(h_t_b)
-
-        F = torch.stack(h_f, dim=2).squeeze(0)
-        B = torch.stack(h_b, dim=2).squeeze(0)   
-        O2 = (F + B)
+        O2, _ = self.gru_2(x, h_t)
+        O2 = O2[:, :, :500] + O2[:, :, 500:]
 
         # BGRU Block 2
         x = torch.cat((O1, O2), dim=2).permute(0, 2, 1)
         x = nn.functional.relu(self.cnn_1d_1_2(x))
         x = self.dropout(x)
-        # x = self.bnorm3(x)
-
-        h_t_f = torch.zeros(1, x.shape[0], 500).to(device)
-        h_t_b = torch.zeros(1, x.shape[0], 500).to(device)
-
-        h_f = []
-        h_b = []
-
+        
+        h_t = torch.zeros(2, x.shape[0], 500).to(device)
         x = x.permute([0, 2, 1])
-        T = x.shape[1]
-        for t in range(T):
-            input_t_f = x[:, t, :].unsqueeze(1)
-            input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
-
-            _, h_t_f = self.gru_f_3(input_t_f, h_t_f)
-            _, h_t_b = self.gru_b_3(input_t_b, h_t_b)
-
-            h_f.append(h_t_f)
-            h_b.append(h_t_b)
-
-
-        F = torch.stack(h_f, dim=2).squeeze(0)
-        B = torch.stack(h_b, dim=2).squeeze(0)   
-        x = (F + B)
+        x, _ = self.gru_3(x, h_t)
+        x = x[:, :, :500] + x[:, :, 500:]
     
         x = self.dropout(x)
         x = nn.functional.relu(self.fc1(x))
