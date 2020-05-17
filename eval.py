@@ -86,11 +86,11 @@ if __name__ == "__main__":
         print("NO BEST MODEL")
         print("Exiting...")        
         exit()
-
-    model.cuda()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
-    acc = test(model, test_loader)
+    acc = test(model, test_loader,device)
     print(acc)
     
     with open(stats_path, "rb") as f:

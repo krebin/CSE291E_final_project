@@ -33,7 +33,7 @@ class BaseModel(nn.Module):
         self.bnorm3 = nn.BatchNorm1d(500)
 
 
-    def forward(self, x):
+    def forward(self, x, device):
         # embed one hot
         one_hot = x[:, 0:22, :].argmax(axis=1)
         embedded = self.embedding(one_hot.long()).permute(0, 2, 1)
@@ -48,8 +48,8 @@ class BaseModel(nn.Module):
 
         # BGRU
         T = x.shape[1]
-        h_t_f = torch.zeros(1, x.shape[0], 250).cuda()
-        h_t_b = torch.zeros(1, x.shape[0], 250).cuda()
+        h_t_f = torch.zeros(1, x.shape[0], 250).to(device)
+        h_t_b = torch.zeros(1, x.shape[0], 250).to(device)
 
         h_f = []
         h_b = []
@@ -72,12 +72,12 @@ class BaseModel(nn.Module):
 
         # BGRU Block 1
         x = torch.cat((x, O1), dim=2)
-        x = nn.functional.relu(self.cnn_1d_1_1(x.view([-1, 751, 700])))
+        x = nn.functional.relu(self.cnn_1d_1_1(x.permute(0,2,1)))
         x = self.dropout(x)
         # x = self.bnorm2(x)
 
-        h_t_f = torch.zeros(1, x.shape[0], 500).cuda()
-        h_t_b = torch.zeros(1, x.shape[0], 500).cuda()
+        h_t_f = torch.zeros(1, x.shape[0], 500).to(device)
+        h_t_b = torch.zeros(1, x.shape[0], 500).to(device)
 
         h_f = []
         h_b = []
@@ -105,8 +105,8 @@ class BaseModel(nn.Module):
         x = self.dropout(x)
         # x = self.bnorm3(x)
 
-        h_t_f = torch.zeros(1, x.shape[0], 500).cuda()
-        h_t_b = torch.zeros(1, x.shape[0], 500).cuda()
+        h_t_f = torch.zeros(1, x.shape[0], 500).to(device)
+        h_t_b = torch.zeros(1, x.shape[0], 500).to(device)
 
         h_f = []
         h_b = []
