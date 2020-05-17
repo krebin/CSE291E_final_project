@@ -38,7 +38,7 @@ def train(epochs, model, stats_path,
         accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs, device)
 
         # Update statistics dict
-        stats_dict["valid"][-1]["accs"] = accs
+        stats_dict["valid"][-1]["acc"] = accs
         stats_dict["valid"][-1]["loss"] = val_loss
 
     model.train()
@@ -88,7 +88,7 @@ def train(epochs, model, stats_path,
         accs, val_loss = val(epoch, model, val_loader, len_val, criterion, epochs, device)
 
         # Update statistics dict
-        stats_dict["valid"][epoch]["accs"] = accs
+        stats_dict["valid"][epoch]["acc"] = accs
         stats_dict["valid"][epoch]["loss"] = val_loss
         stats_dict["next_epoch"] = epoch + 1
 
