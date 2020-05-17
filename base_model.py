@@ -65,9 +65,9 @@ class BaseModel(nn.Module):
             h_b.append(h_t_b)
 
 
-        F = torch.cat(h_f, dim=2)
-        B = torch.cat(h_b, dim=2)
-        O1 = torch.cat((F, B), dim=2).view([x.shape[0], 700, -1])
+        F = torch.stack(h_f, dim=2).squeeze(0)
+        B = torch.stack(h_b, dim=2).squeeze(0)      
+        O1 = torch.cat((F, B), dim=2)
 
 
         # BGRU Block 1
@@ -95,9 +95,9 @@ class BaseModel(nn.Module):
             h_f.append(h_t_f)
             h_b.append(h_t_b)
 
-        F = torch.cat(h_f, dim=2)
-        B = torch.cat(h_b, dim=2)
-        O2 = (F + B).view([x.shape[0], 700, -1])
+        F = torch.stack(h_f, dim=2).squeeze(0)
+        B = torch.stack(h_b, dim=2).squeeze(0)   
+        O2 = (F + B)
 
         # BGRU Block 2
         x = torch.cat((O1, O2), dim=2).permute(0, 2, 1)
@@ -123,9 +123,11 @@ class BaseModel(nn.Module):
             h_f.append(h_t_f)
             h_b.append(h_t_b)
 
-        F = torch.cat(h_f, dim=2)
-        B = torch.cat(h_b, dim=2)
-        x = (F + B).view([x.shape[0], 700, 500])
+
+        F = torch.stack(h_f, dim=2).squeeze(0)
+        B = torch.stack(h_b, dim=2).squeeze(0)   
+        x = (F + B)
+    
         x = self.dropout(x)
         x = nn.functional.relu(self.fc1(x))
         x = self.fc2(x)
