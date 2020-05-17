@@ -8,3 +8,5 @@ __pycache__
 .ipynb_checkpoints
 models
 stats
+.vscode
+.DS_store
