@@ -16,6 +16,7 @@ import random
 import os
 import csv
 import torch.nn as nn
+import json
 np.random.seed(42)
 
 
@@ -46,7 +47,7 @@ else:
 
 # Get argument from config
 cfg = cfg.cfg
-batch_size = cfg["batch_size"]
+batch_size = cfg["test_batch_size"]
 valid_batch_size = cfg["valid_batch_size"]
 num_workers = cfg["num_workers"]
 epochs = cfg["epochs"]
@@ -55,7 +56,7 @@ model_type = experiment
 
 
 if __name__ == "__main__":
-    cb513_data = pkl.load(open("CB513.pkl", "rb"))
+    cb513_data = json.load(open("CB513.json", "r"))
     ids = np.arange(len(cb513_data))
 
     if experiment == "dummy1":

@@ -180,6 +180,9 @@ def test(model, test_loader):
             predictions = outputs.argmax(axis=2).cpu().numpy()
 
             for label, prediction, length in zip(labels, predictions, seq_lens):
+                print(label[:length])
+                print("pred:")
+                print(prediction[:length])
                 all_labels += list(label[:length])
                 all_predictions += list(prediction[:length])
 

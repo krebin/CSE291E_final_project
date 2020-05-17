@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
 
     model = Model().cuda()
-    criterion = nn.CrossEntropyLoss(ignore_index=21)
+    criterion = nn.CrossEntropyLoss(ignore_index=8)
     model.apply(init_weights)
     print(type(model))
 
