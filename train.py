@@ -122,8 +122,8 @@ if __name__ == "__main__":
         except:
             pass
 
-
-    model = Model().cuda()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = Model().to(device)
     criterion = nn.CrossEntropyLoss(ignore_index=8)
     model.apply(init_weights)
     print(type(model))
@@ -139,8 +139,8 @@ if __name__ == "__main__":
         optim = torch.load(optim_path)
         optimizer.load_state_dict(optim['optimizer'])
 
-    model.cuda()
+    model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
     stats_dict, model = train(epochs, model, stats_path, train_loader, val_loader, optimizer, criterion,
-                              len_train, len_val, latest_model_path, best_model_path, optim_path)
+                              len_train, len_val, latest_model_path, best_model_path, optim_path, device)
