@@ -11,36 +11,37 @@ from PIL import Image
 class ProteinDataset(data.Dataset):
     def __init__(self, protein_data, ids):
 
-        protein_lengths = 0
-        for i, id in enumerate(ids):
-            d = protein_data[id]
-            protein_lengths += d["protein_length"]
+        data_len = len(ids)
 
-        all_encodings = np.zeros([protein_lengths, 50])
-        all_labels = np.zeros([protein_lengths, 8])
+        all_encodings = np.zeros([data_len, 35700])
+        all_labels = np.zeros([data_len, 6300])
+        all_lengths = []
 
-        total_length = 0
         for i, id in enumerate(ids):
+            id = str(id)
             if i % 250 == 0:
-                print("Stacking {0}/{1} proteins".format(i, len(ids)))
+                print("Loading {0}/{1} proteins".format(i, len(ids)))
 
             d = protein_data[id]
             protein_length = d["protein_length"]
+            all_lengths.append(protein_length)
 
-            all_encodings[total_length:total_length + protein_length] = d["protein_encoding"]
-            all_labels[total_length:total_length + protein_length] = d["secondary_structure_onehot"]
-
-            total_length += protein_length
+            all_encodings[i, :] = d["protein_encoding"]
+            all_labels[i, :] = d["secondary_structure_onehot"]
         
         self.all_encodings = all_encodings.astype(np.float32)
         self.all_labels = all_labels.astype(np.int32)
+        self.all_lengths = np.array(all_lengths).astype(np.int32)
+
+        print(len(all_encodings), len(all_labels), len(all_lengths))
 
     def __getitem__(self, index):
         """Returns one data pair (image and caption)."""
         encoding = self.all_encodings[index]
         label = self.all_labels[index]
+        length = self.all_lengths[index]
         
-        return encoding, label
+        return encoding, label, length
 
     def __len__(self):
         return len(self.all_encodings)
