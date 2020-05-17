@@ -80,13 +80,13 @@ if __name__ == "__main__":
         train_loader, len_train = get_loader(protein_data=tr5534_data,
                                              ids=[0, 1, 2],
                                              batch_size=batch_size,
-                                             shuffle=True,
+                                             shuffle=False,
                                              num_workers=num_workers)
 
         val_loader, len_val = get_loader(protein_data=tr5534_data,
                                          ids=[0, 1, 2],
                                          batch_size=valid_batch_size,
-                                         shuffle=True,
+                                         shuffle=False,
                                          num_workers=num_workers)
 
 

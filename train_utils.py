@@ -56,8 +56,8 @@ def train(epochs, model, stats_path,
 
             outputs = model(X)
 
-            T = Y.argmax(dim=1).long().cuda()
-            loss = criterion(outputs, T)
+            T = Y.argmax(dim=2).long().cuda()
+            loss = criterion(outputs.permute(0, 2, 1), T)
             train_loss += (loss.item() * len(X))
 
             labels = Y.argmax(dim=2).cpu().numpy()
@@ -132,8 +132,8 @@ def val(epoch, model, val_loader, len_val, criterion, epochs):
 
             outputs = model(X)
 
-            T = Y.argmax(dim=1).long().cuda()
-            batch_loss = criterion(outputs, T).item()
+            T = Y.argmax(dim=2).long().cuda()
+            batch_loss = criterion(outputs.permute(0, 2, 1), T).item()           
 
             # Unaverage to do total average later b/c last batch may have unequal number of samples
             loss += (batch_loss * len(X))
