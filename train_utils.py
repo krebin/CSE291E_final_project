@@ -51,7 +51,8 @@ def train(epochs, model, stats_path,
         for iter, (X, Y, seq_lens) in enumerate(train_loader):
             optimizer.zero_grad()
 
-            X = X.view([-1, 51, 700]).cuda()
+            X = X.reshape([-1, 700, 51]).cuda()
+            X = X.permute(0, 2, 1)
             Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
@@ -127,7 +128,8 @@ def val(epoch, model, val_loader, len_val, criterion, epochs):
     with torch.no_grad():
         for iter, (X, Y, seq_lens) in enumerate(val_loader):
 
-            X = X.view([-1, 51, 700]).cuda()
+            X = X.reshape([-1, 700, 51]).cuda()
+            X = X.permute(0, 2, 1)
             Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
@@ -167,7 +169,10 @@ def test(model, test_loader):
     fmt_string = "Batch[{0}/{1}]"
     with torch.no_grad():
         for iter, (X, Y, seq_lens) in enumerate(test_loader):
-            X = X.view([-1, 51, 700]).cuda()
+            
+            X = X.reshape([-1, 700, 51]).cuda()
+            X = X.permute(0, 2, 1)
+
             Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
