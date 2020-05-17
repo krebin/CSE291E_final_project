@@ -22,11 +22,15 @@ class BaseModel(nn.Module):
         self.gru_f_3 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True)
         self.gru_b_3 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True)
 
-        self.fc1 = nn.Linear(500, 1024)
-        self.fc2 = nn.Linear(1024, 9)
+        self.fc1 = nn.Linear(500, 128)
+        self.fc2 = nn.Linear(128, 9)
 
         self.dropout = nn.Dropout(p=0.5)
         self.embedding = nn.Embedding(22, 22)
+        
+        self.bnorm1 = nn.BatchNorm1d(251)
+        self.bnorm2 = nn.BatchNorm1d(500)
+        self.bnorm3 = nn.BatchNorm1d(500)
 
 
     def forward(self, x):
@@ -39,6 +43,7 @@ class BaseModel(nn.Module):
         local_block_3 = self.cnn_1d_3(x)
         local_block_5 = self.cnn_1d_5(x)
         x = nn.functional.relu(torch.cat((x, local_block_3, local_block_5), dim=1))
+        # x = self.bnorm1(x)
         x = x.permute(0, 2, 1)
 
         # BGRU
@@ -69,6 +74,7 @@ class BaseModel(nn.Module):
         x = torch.cat((x, O1), dim=2)
         x = nn.functional.relu(self.cnn_1d_1_1(x.view([-1, 751, 700])))
         x = self.dropout(x)
+        # x = self.bnorm2(x)
 
         h_t_f = torch.zeros(1, x.shape[0], 500).cuda()
         h_t_b = torch.zeros(1, x.shape[0], 500).cuda()
@@ -97,6 +103,7 @@ class BaseModel(nn.Module):
         x = torch.cat((x, O2), dim=2).permute(0, 2, 1)
         x = nn.functional.relu(self.cnn_1d_1_2(x))
         x = self.dropout(x)
+        # x = self.bnorm3(x)
 
         h_t_f = torch.zeros(1, x.shape[0], 500).cuda()
         h_t_b = torch.zeros(1, x.shape[0], 500).cuda()
@@ -119,6 +126,7 @@ class BaseModel(nn.Module):
         F = torch.cat(h_f, dim=2)
         B = torch.cat(h_b, dim=2)
         x = (F + B).view([x.shape[0], 700, 500])
+        x = self.dropout(x)
         x = nn.functional.relu(self.fc1(x))
         x = self.fc2(x)
 
