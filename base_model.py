@@ -51,7 +51,7 @@ class BaseModel(nn.Module):
 
         for t in range(T):
             input_t_f = x[:, t, :].unsqueeze(1)
-            input_t_b = x[:, t, :].unsqueeze(1)
+            input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
 
             _, h_t_f = self.gru_f_1(input_t_f, h_t_f)
             _, h_t_b = self.gru_b_1(input_t_b, h_t_b)
@@ -80,7 +80,7 @@ class BaseModel(nn.Module):
         T = x.shape[1]
         for t in range(T):
             input_t_f = x[:, t, :].unsqueeze(1)
-            input_t_b = x[:, t, :].unsqueeze(1)
+            input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
 
 
             _, h_t_f = self.gru_f_2(input_t_f, h_t_f)
@@ -108,7 +108,7 @@ class BaseModel(nn.Module):
         T = x.shape[1]
         for t in range(T):
             input_t_f = x[:, t, :].unsqueeze(1)
-            input_t_b = x[:, t, :].unsqueeze(1)
+            input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
 
             _, h_t_f = self.gru_f_2(input_t_f, h_t_f)
             _, h_t_b = self.gru_b_2(input_t_b, h_t_b)
