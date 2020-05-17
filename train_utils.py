@@ -48,23 +48,24 @@ def train(epochs, model, stats_path,
         all_predictions = []
 
         ts = time.time()
-        for iter, (X, Y) in enumerate(train_loader):
+        for iter, (X, Y, seq_lens) in enumerate(train_loader):
             optimizer.zero_grad()
 
-            X = X.view([-1, 50, 1]).cuda()
-            Y = Y.argmax(dim=1).long().cuda()
+            X = X.view([-1, 51, 700]).cuda()
+            Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
 
-            loss = criterion(outputs, Y)
+            T = Y.argmax(dim=1).long().cuda()
+            loss = criterion(outputs, T)
             train_loss += (loss.item() * len(X))
 
-            outputs, predictions = torch.max(outputs, axis=1)
-            predictions = predictions.cpu().detach().numpy().reshape([-1]).astype(np.int32)
-            labels = Y.cpu().detach().numpy().reshape([-1]).astype(np.int32)
+            labels = Y.argmax(dim=2).cpu().numpy()
+            predictions = outputs.argmax(axis=2).cpu().numpy()
 
-            all_labels.append(labels)
-            all_predictions.append(predictions)
+            for label, prediction, length in zip(labels, predictions, seq_lens):
+                all_labels += list(label[:length])
+                all_predictions += list(prediction[:length])
 
             if iter % 10 == 0:
                 print(fmt_string.format(epoch, epochs, loss.item(), iter, len(train_loader)))
@@ -124,24 +125,25 @@ def val(epoch, model, val_loader, len_val, criterion, epochs):
     num_val_batches = len(val_loader)
     loss = 0.
     with torch.no_grad():
-        for iter, (X, Y) in enumerate(val_loader):
+        for iter, (X, Y, seq_lens) in enumerate(val_loader):
 
-            X = X.view([-1, 50, 1]).cuda()
-            Y = Y.argmax(dim=1).long().cuda()
+            X = X.view([-1, 51, 700]).cuda()
+            Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
 
-            batch_loss = criterion(outputs, Y).item()
+            T = Y.argmax(dim=1).long().cuda()
+            batch_loss = criterion(outputs, T).item()
 
             # Unaverage to do total average later b/c last batch may have unequal number of samples
             loss += (batch_loss * len(X))
-            # cross entropy does softmax so we can take index of max of outputs as prediction
-            outputs, predictions = torch.max(outputs, axis=1)
-            predictions = predictions.cpu().detach().numpy().reshape([-1]).astype(np.int32)
-            labels = Y.cpu().detach().numpy().reshape([-1]).astype(np.int32)
 
-            all_labels.append(labels)
-            all_predictions.append(predictions)
+            labels = Y.argmax(dim=2).cpu().numpy()
+            predictions = outputs.argmax(axis=2).cpu().numpy()
+
+            for label, prediction, length in zip(labels, predictions, seq_lens):
+                all_labels += list(label[:length])
+                all_predictions += list(prediction[:length])
 
             if iter % 10 == 0:
                 print(fmt_string.format(epoch, epochs, batch_loss, iter, num_val_batches))
@@ -150,8 +152,8 @@ def val(epoch, model, val_loader, len_val, criterion, epochs):
     loss /= len_val
     print("Total Validation Loss: {0}".format(loss))
 
-    labels = np.hstack(all_labels)
-    predictions = np.hstack(all_predictions)
+    labels = np.array(all_labels)
+    predictions = np.array(all_predictions)
 
     accs = np.mean(labels == predictions)
     return accs, loss
@@ -164,23 +166,24 @@ def test(model, test_loader):
 
     fmt_string = "Batch[{0}/{1}]"
     with torch.no_grad():
-        for iter, (X, Y) in enumerate(test_loader):
-            X = X.view([-1, 50, 1]).cuda()
-            Y = Y.argmax(dim=1).long().cuda()
+        for iter, (X, Y, seq_lens) in enumerate(test_loader):
+            X = X.view([-1, 51, 700]).cuda()
+            Y = Y.view([-1, 700, 9])
 
             outputs = model(X)
+
             if iter % 10 == 0:
                 print(fmt_string.format(iter, len(test_loader)))
 
             # cross entropy does softmax so we can take index of max of outputs as prediction
-            outputs, predictions = torch.max(outputs, axis=1)
-            predictions = predictions.cpu().detach().numpy().reshape([-1]).astype(np.int32)
-            labels = Y.cpu().detach().numpy().reshape([-1]).astype(np.int32)
+            labels = Y.argmax(dim=2).cpu().numpy()
+            predictions = outputs.argmax(axis=2).cpu().numpy()
 
-            all_labels.append(labels)
-            all_predictions.append(predictions)
+            for label, prediction, length in zip(labels, predictions, seq_lens):
+                all_labels += list(label[:length])
+                all_predictions += list(prediction[:length])
 
-    labels = np.hstack(all_labels)
-    predictions = np.hstack(all_predictions)
+    labels = np.array(all_labels)
+    predictions = np.array(all_predictions)
     accs = np.mean(labels == predictions)
     return accs

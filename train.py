@@ -12,6 +12,7 @@ import time
 import itertools
 import random
 import os
+import json
 import csv
 import torch.nn as nn
 
@@ -54,8 +55,12 @@ model_type = experiment
 
 
 if __name__ == "__main__":
-    tr5534_data = pkl.load(open("TR5534.pkl", "rb"))
-    cb513_data = pkl.load(open("CB513.pkl", "rb"))
+    if "dummy" in experiment:
+        tr5534_data = json.load(open("CB513.json", "r"))
+    else:
+        tr5534_data = json.load(open("TR5534.json", "r"))
+
+    cb513_data = json.load(open("CB513.json", "r"))
 
     len_train = len(tr5534_data)
     percent_train = .8
@@ -65,6 +70,9 @@ if __name__ == "__main__":
 
     val_start = train_end
     val_end = len_train
+
+    print(train_start, train_end)
+    print(val_start, val_end)
 
     ids = np.random.choice(len_train, len_train, replace=False)
 
@@ -77,15 +85,11 @@ if __name__ == "__main__":
 
         val_loader, len_val = get_loader(protein_data=tr5534_data,
                                          ids=[0, 1, 2],
-                                         batch_size=batch_size,
+                                         batch_size=valid_batch_size,
                                          shuffle=True,
                                          num_workers=num_workers)
 
-        test_loader, len_test = get_loader(protein_data=cb513_data,
-                                           ids=[0, 1, 2],
-                                           batch_size=batch_size,
-                                           shuffle=True,
-                                           num_workers=num_workers)
+
     else:
         train_loader, len_train = get_loader(protein_data=tr5534_data,
                                              ids=ids[train_start:train_end],
@@ -95,17 +99,11 @@ if __name__ == "__main__":
 
         val_loader, len_val = get_loader(protein_data=tr5534_data,
                                          ids=ids[val_start:val_end],
-                                         batch_size=batch_size,
+                                         batch_size=valid_batch_size,
                                          shuffle=True,
                                          num_workers=num_workers)
 
-        test_loader, len_test = get_loader(protein_data=cb513_data,
-                                           ids=[0, 1, 2],
-                                           batch_size=batch_size,
-                                           shuffle=True,
-                                           num_workers=num_workers)
-
-    print(len_train, len_val, len_test)
+    print(len_train, len_val)
 
     if not os.path.exists(os.path.join("models", model_type)):
         os.makedirs(os.path.join("stats", model_type), exist_ok=True)
@@ -126,7 +124,7 @@ if __name__ == "__main__":
 
 
     model = Model().cuda()
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=21)
     model.apply(init_weights)
     print(type(model))
 

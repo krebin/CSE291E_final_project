@@ -56,7 +56,7 @@ model_type = experiment
 
 if __name__ == "__main__":
     cb513_data = pkl.load(open("CB513.pkl", "rb"))
-    ids = len(cb513_data)
+    ids = np.arange(len(cb513_data))
 
     if experiment == "dummy1":
         test_loader, len_test = get_loader(protein_data=cb513_data,
@@ -90,6 +90,7 @@ if __name__ == "__main__":
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
     acc = test(model, test_loader)
+    print(acc)
     
     with open(stats_path, "rb") as f:
         stats_dict = pkl.load(f)
