@@ -17,7 +17,7 @@ def train(epochs, model, stats_path,
           optimizer, criterion,
           len_train, len_val,
           latest_model_path,
-          best_model_path, optim_path, device):
+          best_model_path, optim_path, device, prot_vec):
 
     fmt_string = "Epoch[{0}/{1}], Batch[{3}/{4}], Train Loss: {2}"
 
@@ -35,7 +35,7 @@ def train(epochs, model, stats_path,
         start_epoch = 0
 
         # See loss before training
-        accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs, device)
+        accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs, device, prot_vec)
 
         # Update statistics dict
         stats_dict["valid"][-1]["acc"] = accs
@@ -51,7 +51,10 @@ def train(epochs, model, stats_path,
         for iter, (X, Y, seq_lens) in enumerate(train_loader):
             optimizer.zero_grad()
 
-            X = X.reshape([-1, 700, 51]).to(device)
+            if (prot_vec):
+                X = X.reshape([-1, 700, 100]).to(device)
+            else:
+                X = X.reshape([-1, 700, 51]).to(device)
             X = X.permute(0, 2, 1)
             Y = Y.view([-1, 700, 9])
 
@@ -85,7 +88,7 @@ def train(epochs, model, stats_path,
         stats_dict["train"][epoch]["acc"] = np.mean(labels == predictions)
 
         # The validation stats after additional epoch
-        accs, val_loss = val(epoch, model, val_loader, len_val, criterion, epochs, device)
+        accs, val_loss = val(epoch, model, val_loader, len_val, criterion, epochs, device, prot_vec)
 
         # Update statistics dict
         stats_dict["valid"][epoch]["acc"] = accs
@@ -115,7 +118,7 @@ def train(epochs, model, stats_path,
     return stats_dict, model
 
 
-def val(epoch, model, val_loader, len_val, criterion, epochs, device):
+def val(epoch, model, val_loader, len_val, criterion, epochs, device, prot_vec):
     # Complete this function - Calculate loss, accuracy and IoU for every epoch
     # Make sure to include a softmax after the output from your model
 
@@ -128,7 +131,10 @@ def val(epoch, model, val_loader, len_val, criterion, epochs, device):
     with torch.no_grad():
         for iter, (X, Y, seq_lens) in enumerate(val_loader):
 
-            X = X.reshape([-1, 700, 51]).to(device)
+            if prot_vec:
+                X = X.reshape([-1, 700, 100]).to(device)
+            else:
+                X = X.reshape([-1, 700, 51]).to(device)
             X = X.permute(0, 2, 1)
             Y = Y.view([-1, 700, 9])
 
@@ -161,7 +167,7 @@ def val(epoch, model, val_loader, len_val, criterion, epochs, device):
     return accs, loss
 
 
-def test(model, test_loader, device):
+def test(model, test_loader, device, prot_vec):
     all_labels = []
     all_predictions = []
     model.eval()
@@ -170,12 +176,16 @@ def test(model, test_loader, device):
     with torch.no_grad():
         for iter, (X, Y, seq_lens) in enumerate(test_loader):
             
-            X = X.reshape([-1, 700, 51]).to(device)
+            if (prot_vec):
+                X = X.reshape([-1, 700, 100]).to(device)                
+            else:
+                X = X.reshape([-1, 700, 51]).to(device)
+                
             X = X.permute(0, 2, 1)
 
             Y = Y.view([-1, 700, 9])
 
-            outputs = model(X)
+            outputs = model(X, device)
 
             if iter % 10 == 0:
                 print(fmt_string.format(iter, len(test_loader)))
@@ -185,9 +195,9 @@ def test(model, test_loader, device):
             predictions = outputs.argmax(axis=2).cpu().numpy()
 
             for label, prediction, length in zip(labels, predictions, seq_lens):
-                print(label[:length])
-                print("pred:")
-                print(prediction[:length])
+#                 print(label[:length])
+#                 print("pred:")
+#                 print(prediction[:length])
                 all_labels += list(label[:length])
                 all_predictions += list(prediction[:length])
 

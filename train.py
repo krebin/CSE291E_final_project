@@ -39,6 +39,9 @@ experiment = args.experiment
 if experiment == "base1":
     import base1_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "prot_vec":
+    import prot_vec_config as cfg
+    from prot_vec_model import ProtVecModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
@@ -53,15 +56,28 @@ epochs = cfg["epochs"]
 lr = cfg["lr"]
 model_type = experiment
 
+if model_type == "prot_vec":
+    prot_vec = True
+else:
+    prot_vec = False
+
 
 if __name__ == "__main__":
+    
     if "dummy" in experiment:
         tr5534_data = json.load(open("CB513.json", "r"))
+        cb513_data = json.load(open("CB513.json", "r"))
+        
+    elif experiment == "prot_vec":
+        tr5534_data = json.load(open("TR5534_prot_vec_only.json", "r"))
+        cb513_data = json.load(open("CB513_prot_vec_only.json", "r"))
+        
     else:
         tr5534_data = json.load(open("TR5534.json", "r"))
+        cb513_data = json.load(open("CB513.json", "r"))
 
-    cb513_data = json.load(open("CB513.json", "r"))
-
+    print(experiment)
+        
     len_train = len(tr5534_data)
     percent_train = .8
 
@@ -81,27 +97,30 @@ if __name__ == "__main__":
                                              ids=[0, 1, 2],
                                              batch_size=batch_size,
                                              shuffle=False,
-                                             num_workers=num_workers)
+                                             num_workers=num_workers,
+                                             prot_vec=prot_vec)
 
         val_loader, len_val = get_loader(protein_data=tr5534_data,
                                          ids=[0, 1, 2],
                                          batch_size=valid_batch_size,
                                          shuffle=False,
-                                         num_workers=num_workers)
-
-
+                                         num_workers=num_workers,
+                                         prot_vec=prot_vec)
+                
     else:
         train_loader, len_train = get_loader(protein_data=tr5534_data,
                                              ids=ids[train_start:train_end],
                                              batch_size=batch_size,
                                              shuffle=True,
-                                             num_workers=num_workers)
+                                             num_workers=num_workers,
+                                             prot_vec=prot_vec)
 
         val_loader, len_val = get_loader(protein_data=tr5534_data,
                                          ids=ids[val_start:val_end],
                                          batch_size=valid_batch_size,
                                          shuffle=True,
-                                         num_workers=num_workers)
+                                         num_workers=num_workers,
+                                         prot_vec=prot_vec)
 
     print(len_train, len_val)
 
@@ -143,4 +162,4 @@ if __name__ == "__main__":
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
     stats_dict, model = train(epochs, model, stats_path, train_loader, val_loader, optimizer, criterion,
-                              len_train, len_val, latest_model_path, best_model_path, optim_path, device)
+                              len_train, len_val, latest_model_path, best_model_path, optim_path, device, prot_vec)
