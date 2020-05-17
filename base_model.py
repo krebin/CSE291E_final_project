@@ -110,8 +110,8 @@ class BaseModel(nn.Module):
             input_t_f = x[:, t, :].unsqueeze(1)
             input_t_b = x[:, T - (t + 1), :].unsqueeze(1)
 
-            _, h_t_f = self.gru_f_2(input_t_f, h_t_f)
-            _, h_t_b = self.gru_b_2(input_t_b, h_t_b)
+            _, h_t_f = self.gru_f_3(input_t_f, h_t_f)
+            _, h_t_b = self.gru_b_3(input_t_b, h_t_b)
 
             h_f.append(h_t_f)
             h_b.append(h_t_b)
