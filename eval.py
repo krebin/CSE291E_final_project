@@ -39,10 +39,12 @@ experiment = args.experiment
 if experiment == "base1":
     import base1_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "prot_vec":
+    import prot_vec_config as cfg
+    from prot_vec_model import ProtVecModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
-
     experiment = "dummy1"
 
 # Get argument from config
@@ -54,9 +56,21 @@ epochs = cfg["epochs"]
 lr = cfg["lr"]
 model_type = experiment
 
+if model_type == "prot_vec":
+    prot_vec = True
+else:
+    prot_vec = False
+
+print(model_type)
 
 if __name__ == "__main__":
-    cb513_data = json.load(open("CB513.json", "r"))
+    
+    if prot_vec:
+        cb513_data = json.load(open("CB513_prot_vec_only.json", "r"))
+        
+    else:
+        cb513_data = json.load(open("CB513.json", "r"))
+    
     ids = np.arange(len(cb513_data))
 
     if experiment == "dummy1":
@@ -64,13 +78,15 @@ if __name__ == "__main__":
                                            ids=[0, 1, 2],
                                            batch_size=batch_size,
                                            shuffle=True,
-                                           num_workers=num_workers)
+                                           num_workers=num_workers,
+                                           prot_vec=prot_vec)
     else:
         test_loader, len_test = get_loader(protein_data=cb513_data,
                                            ids=ids,
                                            batch_size=batch_size,
                                            shuffle=True,
-                                           num_workers=num_workers)
+                                           num_workers=num_workers,
+                                           prot_vec=prot_vec)
     
     if not os.path.exists(model_type):
         os.mkdir(model_type)
@@ -90,7 +106,7 @@ if __name__ == "__main__":
     model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
-    acc = test(model, test_loader,device)
+    acc = test(model, test_loader,device,prot_vec)
     print(acc)
     
     with open(stats_path, "rb") as f:
