@@ -41,7 +41,7 @@ if experiment == "base1":
     from base_model import BaseModel as Model
 elif experiment == "prot_vec":
     import prot_vec_config as cfg
-    from prot_vec_model import ProtVecModel as Model
+    from base_model import BaseModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
@@ -54,18 +54,20 @@ valid_batch_size = cfg["valid_batch_size"]
 num_workers = cfg["num_workers"]
 epochs = cfg["epochs"]
 lr = cfg["lr"]
+num_features = cfg["num_features"] # base=51, prot_vec=100
+one_hot_embed = cfg["one_hot_embed"]
 model_type = experiment
 
-if model_type == "prot_vec":
-    prot_vec = True
-else:
-    prot_vec = False
+# if model_type == "prot_vec":
+#     prot_vec = True
+# else:
+#     prot_vec = False
 
 print(model_type)
 
 if __name__ == "__main__":
     
-    if prot_vec:
+    if experiment == "prot_vec":
         cb513_data = json.load(open("CB513_prot_vec_only.json", "r"))
         
     else:
@@ -79,17 +81,17 @@ if __name__ == "__main__":
                                            batch_size=batch_size,
                                            shuffle=True,
                                            num_workers=num_workers,
-                                           prot_vec=prot_vec)
+                                           num_features=num_features)
     else:
         test_loader, len_test = get_loader(protein_data=cb513_data,
                                            ids=ids,
                                            batch_size=batch_size,
                                            shuffle=True,
                                            num_workers=num_workers,
-                                           prot_vec=prot_vec)
+                                           num_features=num_features)
     
-    if not os.path.exists(model_type):
-        os.mkdir(model_type)
+#     if not os.path.exists(model_type):
+#         os.mkdir(model_type)
 
     best_model_path = os.path.join("models", model_type, "best_model.pt")
     stats_path = os.path.join("stats", model_type, "stats.pkl")
@@ -106,7 +108,7 @@ if __name__ == "__main__":
     model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
-    acc = test(model, test_loader,device,prot_vec)
+    acc = test(model, test_loader,device,num_features,one_hot_embed)
     print(acc)
     
     with open(stats_path, "rb") as f:
