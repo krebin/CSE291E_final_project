@@ -5,3 +5,5 @@ cfg["test_batch_size"] = 20
 cfg["num_workers"] = 2
 cfg["epochs"] = 100
 cfg["lr"] = 0.0004
+cfg["num_features"] = 51
+cfg["one_hot_embed"] = True

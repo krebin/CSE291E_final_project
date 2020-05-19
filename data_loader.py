@@ -9,7 +9,7 @@ from PIL import Image
 
 
 class ProteinDataset(data.Dataset):
-    def __init__(self, protein_data, ids, size=35700):
+    def __init__(self, protein_data, ids, size):
 
         data_len = len(ids)
 
@@ -47,13 +47,10 @@ class ProteinDataset(data.Dataset):
         return len(self.all_encodings)
 
 
-def get_loader(protein_data, ids, batch_size, shuffle, num_workers, prot_vec):
+def get_loader(protein_data, ids, batch_size, shuffle, num_workers, num_features):
     """Returns torch.utils.data.DataLoader"""
     
-    if (prot_vec):
-        protein = ProteinDataset(protein_data, ids, size=70000)
-    else:
-        protein = ProteinDataset(protein_data, ids)
+    protein = ProteinDataset(protein_data, ids, size=(700*num_features))
 
     # def collate_fn(data):
     #     return data

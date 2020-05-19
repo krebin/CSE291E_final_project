@@ -6,14 +6,17 @@ import numpy as np
 
 class BaseModel(nn.Module):
 
-    def __init__(self):
+    def __init__(self, num_features=51):
+        
+        self.num_features = num_features
+        
         super().__init__()
-        self.cnn_1d_3 = nn.Conv1d(in_channels=51, out_channels=100, stride=1, kernel_size=3, padding=1, bias=True)
-        self.cnn_1d_5 = nn.Conv1d(in_channels=51, out_channels=100, stride=1, kernel_size=5, padding=2, bias=True)
-        self.cnn_1d_1_1 = nn.Conv1d(in_channels=751, out_channels=500, stride=1, kernel_size=1, bias=True)
+        self.cnn_1d_3 = nn.Conv1d(in_channels=self.num_features, out_channels=100, stride=1, kernel_size=3, padding=1, bias=True)
+        self.cnn_1d_5 = nn.Conv1d(in_channels=self.num_features, out_channels=100, stride=1, kernel_size=5, padding=2, bias=True)
+        self.cnn_1d_1_1 = nn.Conv1d(in_channels=(700+self.num_features), out_channels=500, stride=1, kernel_size=1, bias=True)
         self.cnn_1d_1_2 = nn.Conv1d(in_channels=1000, out_channels=500, stride=1, kernel_size=1, bias=True)
 
-        self.gru_1 = nn.GRU(input_size=251, hidden_size=250, num_layers=1, batch_first=True, bidirectional=True)
+        self.gru_1 = nn.GRU(input_size=(200+self.num_features), hidden_size=250, num_layers=1, batch_first=True, bidirectional=True)
         self.gru_2 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True, bidirectional=True)
         self.gru_3 = nn.GRU(input_size=500, hidden_size=500, num_layers=1, batch_first=True, bidirectional=True)
 
@@ -23,16 +26,18 @@ class BaseModel(nn.Module):
         self.dropout = nn.Dropout(p=0.5)
         self.embedding = nn.Embedding(22, 22)
         
-        self.bnorm1 = nn.BatchNorm1d(251)
+        self.bnorm1 = nn.BatchNorm1d((200+self.num_features))
         self.bnorm2 = nn.BatchNorm1d(500)
         self.bnorm3 = nn.BatchNorm1d(500)
 
 
-    def forward(self, x, device):
-        # embed one hot
-        one_hot = x[:, 0:22, :].argmax(axis=1)
-        embedded = self.embedding(one_hot.long()).permute(0, 2, 1)
-        x[:, 0:22, :] = embedded
+    def forward(self, x, device, one_hot_embed):
+        
+        if (one_hot_embed == True):
+            # embed one hot
+            one_hot = x[:, 0:22, :].argmax(axis=1)
+            embedded = self.embedding(one_hot.long()).permute(0, 2, 1)
+            x[:, 0:22, :] = embedded
 
         # Local Block
         local_block_3 = self.cnn_1d_3(x)

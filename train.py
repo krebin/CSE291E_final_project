@@ -41,7 +41,7 @@ if experiment == "base1":
     from base_model import BaseModel as Model
 elif experiment == "prot_vec":
     import prot_vec_config as cfg
-    from prot_vec_model import ProtVecModel as Model
+    from base_model import BaseModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
@@ -54,12 +54,14 @@ valid_batch_size = cfg["valid_batch_size"]
 num_workers = cfg["num_workers"]
 epochs = cfg["epochs"]
 lr = cfg["lr"]
+num_features = cfg["num_features"] # base=51, prot_vec=100
+one_hot_embed = cfg["one_hot_embed"] # true if we have one-hot encoding, false if not (ProtVec)
 model_type = experiment
 
-if model_type == "prot_vec":
-    prot_vec = True
-else:
-    prot_vec = False
+# if model_type == "prot_vec":
+#     prot_vec = True
+# else:
+#     prot_vec = False
 
 
 if __name__ == "__main__":
@@ -98,14 +100,14 @@ if __name__ == "__main__":
                                              batch_size=batch_size,
                                              shuffle=False,
                                              num_workers=num_workers,
-                                             prot_vec=prot_vec)
+                                             num_features=num_features)
 
         val_loader, len_val = get_loader(protein_data=tr5534_data,
                                          ids=[0, 1, 2],
                                          batch_size=valid_batch_size,
                                          shuffle=False,
                                          num_workers=num_workers,
-                                         prot_vec=prot_vec)
+                                         num_features=num_features)
                 
     else:
         train_loader, len_train = get_loader(protein_data=tr5534_data,
@@ -113,14 +115,14 @@ if __name__ == "__main__":
                                              batch_size=batch_size,
                                              shuffle=True,
                                              num_workers=num_workers,
-                                             prot_vec=prot_vec)
+                                             num_features=num_features)
 
         val_loader, len_val = get_loader(protein_data=tr5534_data,
                                          ids=ids[val_start:val_end],
                                          batch_size=valid_batch_size,
                                          shuffle=True,
                                          num_workers=num_workers,
-                                         prot_vec=prot_vec)
+                                         num_features=num_features)
 
     print(len_train, len_val)
 
@@ -142,7 +144,7 @@ if __name__ == "__main__":
             pass
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Model().to(device)
+    model = Model(num_features=num_features).to(device)
     criterion = nn.CrossEntropyLoss(ignore_index=8)
     model.apply(init_weights)
     print(type(model))
@@ -162,4 +164,5 @@ if __name__ == "__main__":
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
     stats_dict, model = train(epochs, model, stats_path, train_loader, val_loader, optimizer, criterion,
-                              len_train, len_val, latest_model_path, best_model_path, optim_path, device, prot_vec)
+                              len_train, len_val, latest_model_path, best_model_path, optim_path, device, 
+                              num_features, one_hot_embed)
