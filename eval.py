@@ -42,6 +42,12 @@ if experiment == "base1":
 elif experiment == "prot_vec":
     import prot_vec_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "pssm_only":
+    import pssm_only_config as cfg
+    from base_model import BaseModel as Model
+elif experiment == "prot_vec_baseline":
+    import prot_vec_baseline_config as cfg
+    from base_model import BaseModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
@@ -69,7 +75,10 @@ if __name__ == "__main__":
     
     if experiment == "prot_vec":
         cb513_data = json.load(open("CB513_prot_vec_only.json", "r"))
-        
+    elif experiment == "pssm_only":
+        cb513_data = json.load(open("CB513_pssm_only.json", "r"))
+    elif experiment == "prot_vec_baseline":
+        cb513_data = json.load(open("CB513_prot_vec_baseline.json", "r"))
     else:
         cb513_data = json.load(open("CB513.json", "r"))
     
