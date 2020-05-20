@@ -48,6 +48,9 @@ elif experiment == "pssm_only":
 elif experiment == "prot_vec_baseline":
     import prot_vec_baseline_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "lstm":
+    import base1_config as cfg
+    from lstm_model import LSTMModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
