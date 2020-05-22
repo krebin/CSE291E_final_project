@@ -123,7 +123,7 @@ if __name__ == "__main__":
     model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
-    acc = test(model, test_loader,device,num_features,one_hot_embed)
+    acc = test(model, test_loader,device,num_features,one_hot_embed,experiment)
     print(acc)
     
     with open(stats_path, "rb") as f:

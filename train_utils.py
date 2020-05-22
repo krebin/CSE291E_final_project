@@ -17,29 +17,29 @@ def train(epochs, model, stats_path,
           optimizer, criterion,
           len_train, len_val,
           latest_model_path,
-          best_model_path, optim_path, device, num_features, one_hot_embed):
+          best_model_path, optim_path, device, num_features, one_hot_embed, early_stop=10):
 
     fmt_string = "Epoch[{0}/{1}], Batch[{3}/{4}], Train Loss: {2}"
 
-    # Load stats if path exists
-    if os.path.exists(stats_path):
-        with open(stats_path, "rb") as f:
-            stats_dict = pkl.load(f)
-        print(stats_dict["best_epoch"])
-        start_epoch = stats_dict["next_epoch"]
-        min_val_loss = stats_dict["valid"][stats_dict["best_epoch"]]["loss"]
-        print("Stats exist. Loading from {0}. Starting from Epoch {1}".format(stats_path, start_epoch))
-    else:
-        min_val_loss = np.inf
-        stats_dict = rec_dd()
-        start_epoch = 0
+    # # Load stats if path exists
+    # if os.path.exists(stats_path):
+    #     with open(stats_path, "rb") as f:
+    #         stats_dict = pkl.load(f)
+    #     print(stats_dict["best_epoch"])
+    #     start_epoch = stats_dict["next_epoch"]
+    #     min_val_loss = stats_dict["valid"][stats_dict["best_epoch"]]["loss"]
+    #     print("Stats exist. Loading from {0}. Starting from Epoch {1}".format(stats_path, start_epoch))
+    # else:
+    min_val_loss = np.inf
+    stats_dict = rec_dd()
+    start_epoch = 0
 
-        # See loss before training
-        accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs, device, num_features, one_hot_embed)
+    # See loss before training
+    accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs, device, num_features, one_hot_embed)
 
-        # Update statistics dict
-        stats_dict["valid"][-1]["acc"] = accs
-        stats_dict["valid"][-1]["loss"] = val_loss
+    # Update statistics dict
+    stats_dict["valid"][-1]["acc"] = accs
+    stats_dict["valid"][-1]["loss"] = val_loss
 
     model.train()
     for epoch in range(start_epoch, epochs):
@@ -61,7 +61,7 @@ def train(epochs, model, stats_path,
             Y = Y.view([-1, 700, 9])
             T = Y.argmax(dim=2).long().to(device)
 
-            outputs = model(X,device,one_hot_embed,src_key_padding_mask=T)
+            outputs = model(X,device,one_hot_embed)
             loss = criterion(outputs.permute(0, 2, 1), T)
             train_loss += (loss.item() * len(X))
 
@@ -108,10 +108,16 @@ def train(epochs, model, stats_path,
             # Save best model
             torch.save(model, best_model_path)
             stats_dict["best_epoch"] = epoch
+        else:
+            early_stop -= 1
 
         # Save stats
         with open(stats_path, "wb") as f:
             pkl.dump(stats_dict, f)
+        
+        if early_stop == 0:
+            print('='*10,'Early stopping.','='*10)
+            break
 
         # Set back to train mode
         model.train()
@@ -171,7 +177,7 @@ def val(epoch, model, val_loader, len_val, criterion, epochs, device, num_featur
     return accs, loss
 
 
-def test(model, test_loader, device, num_features, one_hot_embed):
+def test(model, test_loader, device, num_features, one_hot_embed, experiment):
     all_labels = []
     all_predictions = []
     model.eval()
@@ -210,5 +216,12 @@ def test(model, test_loader, device, num_features, one_hot_embed):
 
     labels = np.array(all_labels)
     predictions = np.array(all_predictions)
+    
+     # Calc test precision, recall, and F1
+    precision_recall_f1(predictions, labels)
+        
+    # Evaluate loss, acc, conf. matrix, and class. report on devset
+    class_report_conf_matrix(predictions, labels, experiment)
+
     accs = np.mean(labels == predictions)
     return accs

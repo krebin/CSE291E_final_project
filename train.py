@@ -78,7 +78,7 @@ model_type = experiment
 
 if __name__ == "__main__":
     
-    if "dummy" in experiment: 
+    if "dummy" or "rezero" in experiment: 
         tr5534_data = json.load(open("CB513.json", "r"))
         cb513_data = json.load(open("CB513.json", "r"))
     elif experiment == "prot_vec":
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
     ids = np.random.choice(len_train, len_train, replace=False)
 
-    if experiment == "dummy1": 
+    if experiment == "dummy1" or "rezero": 
         train_loader, len_train = get_loader(protein_data=tr5534_data,
                                              ids=[0, 1, 2],
                                              batch_size=batch_size,

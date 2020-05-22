@@ -66,6 +66,8 @@ class ReZeroModel(Module):
         
         
         self.embedding = nn.Embedding(22, 22)
+        self.full_embedding = nn.Embedding(51, 51)
+        self.bn = nn.BatchNorm1d(51)
         
 
     def __setstate__(self, state):
@@ -74,9 +76,9 @@ class ReZeroModel(Module):
         super(ReZeroModel, self).__setstate__(state)
     
     def _generate_square_subsequent_mask(self, mask):
-        mask = mask.bool().masked_fill(mask == 8, True)
+        mask = mask.bool().masked_fill(mask == 1, True)
         mask = mask.masked_fill(mask != True, False)
-        return torch.transpose(mask,0,1)
+        return mask #torch.transpose(mask,0,1)
 
     def forward(self, src, device, one_hot_embed, src_mask=None, src_key_padding_mask=None):
         # type: (Tensor, Optional[Tensor], Optional[Tensor]) -> Tensor
@@ -90,24 +92,26 @@ class ReZeroModel(Module):
         """
         
         ## IN: bs x 700 x 51
+        # Set padding mask
+        pad = src[:,21,:] 
+        pad_mask = self._generate_square_subsequent_mask(pad.to(device))
+            
         if (one_hot_embed == True):
             # embed one hot
             one_hot = src[:, 0:22, :].argmax(axis=1)
             embedded = self.embedding(one_hot.long()).permute(0, 2, 1)
             src[:, 0:22, :] = embedded
         
-         
-        src = src.permute(0,2,1)  # permute for transformer. Need to undo this at end of fwd pass
-        src2 = src
+        src = self.bn(src) # in: bs x features x length
         
-        # Set padding mask
-        pad_mask = None
-        if src_key_padding_mask is not None:
-            pad_mask = self._generate_square_subsequent_mask(src_key_padding_mask.to(device))
+         
+        src = src.permute(2,0,1)  # permute for transformer. Need to undo this at end of fwd pass
+        src2 = src
+    
         
         if self.use_LayerNorm == "pre":
             src2 = self.norm1(src2)
-        src2 = self.self_attn(src2, src2, src2, key_padding_mask=pad_mask)[0]
+        src2 = self.self_attn(src2,src2,src2, key_padding_mask=pad_mask)[0]
         # Apply the residual weight to the residual connection. This enables ReZero.
         src2 = self.resweight * src2
         src2 = self.dropout1(src2)
@@ -130,4 +134,4 @@ class ReZeroModel(Module):
             src = src + src2
         elif self.use_LayerNorm == "post":
             src = self.norm1(src + src2)
-        return src
+        return src.permute(1,0,2)
