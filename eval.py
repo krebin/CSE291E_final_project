@@ -51,6 +51,9 @@ elif experiment == "prot_vec_baseline":
 elif experiment == "lstm":
     import base1_config as cfg
     from lstm_model import LSTMModel as Model
+elif experiment == "rezero":
+    import base1_config as cfg
+    from rezero_model import ReZeroModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model

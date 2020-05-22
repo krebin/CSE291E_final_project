@@ -51,8 +51,8 @@ class LSTMModel(nn.Module):
         x = x.permute(0, 2, 1)
 
         # LSTM
-        h_t = torch.zeros(2, x.shape[0], 250).to(device)
-        O1, _ = self.lstm_1(x, h_t)
+        # h_t = torch.zeros(2, x.shape[0], 250).to(device)
+        O1, _ = self.lstm_1(x)
 
         # LSTM Block 1
         x = torch.cat((x, O1), dim=2)
@@ -61,7 +61,7 @@ class LSTMModel(nn.Module):
 
         h_t = torch.zeros(2, x.shape[0], 500).to(device)
 
-        O2, _ = self.lstm_2(x, h_t)
+        O2, _ = self.lstm_2(x)
         O2 = O2[:, :, :500] + O2[:, :, 500:]
 
         # LSTM Block 2
@@ -71,7 +71,7 @@ class LSTMModel(nn.Module):
         
         h_t = torch.zeros(2, x.shape[0], 500).to(device)
         x = x.permute([0, 2, 1])
-        x, _ = self.lstm_3(x, h_t)
+        x, _ = self.lstm_3(x)
         x = x[:, :, :500] + x[:, :, 500:]
     
         x = self.dropout(x)

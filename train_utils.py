@@ -59,10 +59,9 @@ def train(epochs, model, stats_path,
 
             X = X.permute(0, 2, 1)
             Y = Y.view([-1, 700, 9])
-
-            outputs = model(X,device,one_hot_embed)
-
             T = Y.argmax(dim=2).long().to(device)
+
+            outputs = model(X,device,one_hot_embed,src_key_padding_mask=T)
             loss = criterion(outputs.permute(0, 2, 1), T)
             train_loss += (loss.item() * len(X))
 
@@ -143,10 +142,9 @@ def val(epoch, model, val_loader, len_val, criterion, epochs, device, num_featur
 
             X = X.permute(0, 2, 1)
             Y = Y.view([-1, 700, 9])
+            T = Y.argmax(dim=2).long().to(device)
 
             outputs = model(X, device, one_hot_embed)
-
-            T = Y.argmax(dim=2).long().to(device)
             batch_loss = criterion(outputs.permute(0, 2, 1), T).item()           
 
             # Unaverage to do total average later b/c last batch may have unequal number of samples
