@@ -101,12 +101,13 @@ class ReZeroModel(Module):
         src2 = src
         
         # Set padding mask
-#        if src_key_padding_mask is not None:
-#            src_key_padding_mask = self._generate_square_subsequent_mask(src_key_padding_mask.to(device))
+        pad_mask = None
+        if src_key_padding_mask is not None:
+            pad_mask = self._generate_square_subsequent_mask(src_key_padding_mask.to(device))
         
         if self.use_LayerNorm == "pre":
             src2 = self.norm1(src2)
-        src2 = self.self_attn(src2, src2, src2)[0]
+        src2 = self.self_attn(src2, src2, src2, key_padding_mask=pad_mask)[0]
         # Apply the residual weight to the residual connection. This enables ReZero.
         src2 = self.resweight * src2
         src2 = self.dropout1(src2)
