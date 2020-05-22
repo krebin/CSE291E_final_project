@@ -74,8 +74,8 @@ class ReZeroModel(Module):
         super(ReZeroModel, self).__setstate__(state)
     
     def _generate_square_subsequent_mask(self, mask):
-        mask = mask.float().masked_fill(mask == 8, float('-inf'))
-        mask = mask.masked_fill(mask != float('-inf'), 0)
+        mask = mask.bool().masked_fill(mask == 8, True)
+        mask = mask.masked_fill(mask != True, False)
         return torch.transpose(mask,0,1)
 
     def forward(self, src, device, one_hot_embed, src_mask=None, src_key_padding_mask=None):
@@ -101,12 +101,12 @@ class ReZeroModel(Module):
         src2 = src
         
         # Set padding mask
-        if src_key_padding_mask is not None:
-            src_key_padding_mask = self._generate_square_subsequent_mask(src_key_padding_mask.to(device))
+#        if src_key_padding_mask is not None:
+#            src_key_padding_mask = self._generate_square_subsequent_mask(src_key_padding_mask.to(device))
         
         if self.use_LayerNorm == "pre":
             src2 = self.norm1(src2)
-        src2 = self.self_attn(src2, src2, src2, key_padding_mask=src_key_padding_mask)[0]
+        src2 = self.self_attn(src2, src2, src2)[0]
         # Apply the residual weight to the residual connection. This enables ReZero.
         src2 = self.resweight * src2
         src2 = self.dropout1(src2)
