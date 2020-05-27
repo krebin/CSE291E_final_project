@@ -214,3 +214,54 @@ def test(model, test_loader, device, num_features, one_hot_embed):
     predictions = np.array(all_predictions)
     accs = np.mean(labels == predictions)
     return accs
+
+def ensemble_test(models, test_loader, device, num_features, one_hot_embed):
+    all_labels = []
+    all_predictions = []
+
+    fmt_string = "Batch[{0}/{1}]"
+    with torch.no_grad():
+        for iter, (X, Y, seq_lens) in enumerate(test_loader):
+            
+            if iter % 10 == 0:
+                    print(fmt_string.format(iter, len(test_loader)))
+            
+#             if (prot_vec):
+#                 X = X.reshape([-1, 700, 100]).to(device)                
+#             else:
+#                 X = X.reshape([-1, 700, 51]).to(device)
+
+            X = X.reshape([-1, 700, num_features]).to(device)
+
+            X = X.permute(0, 2, 1)
+
+            Y = Y.view([-1, 700, 9])
+            
+            # get outputs from first model 
+            outputs_ensemble = models[0](X, device, one_hot_embed).unsqueeze(0)
+            
+            for model in models[1:]:
+
+                # stack together outputs from subsequent models
+                outputs_ensemble = torch.cat((outputs_ensemble, model(X, device, one_hot_embed).unsqueeze(0)))
+
+            # get labels
+            labels = Y.argmax(dim=2).cpu().numpy()
+            
+            # average across softmax probability distributions from all models
+            outputs = torch.mean(outputs_ensemble, axis=0)
+            
+            # cross entropy does softmax so we can take index of max of outputs as prediction
+            predictions = outputs.argmax(axis=2).cpu().numpy()
+
+            for label, prediction, length in zip(labels, predictions, seq_lens):
+                all_labels += list(label[:length])
+                all_predictions += list(prediction[:length])
+
+                    
+    labels = np.array(all_labels)
+    predictions = np.array(all_predictions)
+    
+    accs = np.mean(labels == predictions)
+    
+    return accs
