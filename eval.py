@@ -48,6 +48,21 @@ elif experiment == "pssm_only":
 elif experiment == "prot_vec_baseline":
     import prot_vec_baseline_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "residual":
+    import residual_config as cfg
+    from residual_model import ResidualModel as Model
+elif experiment == "residual2":
+    import residual2_config as cfg
+    from residual_model import ResidualModel as Model
+elif experiment == "residual3":
+    import residual2_config as cfg
+    from residual_model import ResidualModel as Model
+elif experiment == "residual_bnorm":
+    import residual_config as cfg
+    from residual_bnorm_model import ResidualModel as Model
+elif experiment == "wavezero":
+    import wavezero_config as cfg
+    from wavezero_model import ResidualModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
@@ -116,7 +131,10 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
-
+    # for param in model.rezero_5:
+    #     print(param)
+    # for param in model.rezero_5_2:
+    #     print(param)
     acc = test(model, test_loader,device,num_features,one_hot_embed)
     print(acc)
     
