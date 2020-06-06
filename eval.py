@@ -57,6 +57,9 @@ elif experiment == "residual2":
 elif experiment == "residual3":
     import residual2_config as cfg
     from residual_model import ResidualModel as Model
+elif experiment == "residual_bnorm":
+    import residual_config as cfg
+    from residual_bnorm_model import ResidualModel as Model
 elif experiment == "wavezero":
     import wavezero_config as cfg
     from wavezero_model import ResidualModel as Model
