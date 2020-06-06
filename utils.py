@@ -40,9 +40,9 @@ def plot_loss(train_losses, valid_losses, arch="base"):
     axs.legend(loc='best', fontsize='x-large')
     axs.set_ylim([0, 1.1*max(np.max(train_losses), np.max(valid_losses))])
     
-    path_name = os.path.join(arch, "loss")
-    # plt.savefig(path_name)
-    plt.show()
+    path_name = os.path.join("plots", arch + "_loss.png")
+    plt.savefig(path_name)
+    # plt.show()
     
 def format_stats(stats_dict, length=50):
     train_info = {"loss": [],
@@ -82,9 +82,9 @@ def plot_acc(train_losses, valid_losses, arch="base"):
     axs.legend(loc='best', fontsize='x-large')
     axs.set_ylim([0, 1.1*max(np.max(train_losses), np.max(valid_losses))])
     
-    path_name = os.path.join(arch, "loss")
-    # plt.savefig(path_name)
-    plt.show()
+    path_name = os.path.join("plots", arch + "_acc.png")
+    plt.savefig(path_name)
+    # plt.show()
     
 def print_stats(arch):
     with open("stats/{0}/stats.pkl".format(arch), "rb") as f:
