@@ -37,10 +37,10 @@ class ReZeroModel(Module):
         >>> out = encoder_layer(src)
     """
 
-    def __init__(self, num_features=51, nhead=3, dim_feedforward=2048, dropout=0.1, activation = "relu", 
-                 use_LayerNorm = False, init_resweight = 0, resweight_trainable = True):
+    def __init__(self, num_features=50, nhead=5, dim_feedforward=2048, dropout=0.1, activation = "relu", 
+                 use_LayerNorm = True, init_resweight = 0, resweight_trainable = True):
         super(ReZeroModel, self).__init__()
-        
+        num_features = 50
         self.self_attn = MultiheadAttention(num_features, nhead, dropout=dropout)
         
         # Define the Resisdual Weight for ReZero
@@ -65,9 +65,9 @@ class ReZeroModel(Module):
             self.activation = torch.tanh
         
         
-        self.embedding = nn.Embedding(22, 22)
+        self.embedding = nn.Embedding(22, 20)
         self.full_embedding = nn.Embedding(51, 51)
-        self.bn = nn.BatchNorm1d(51)
+        self.bn = nn.BatchNorm1d(50)
         
 
     def __setstate__(self, state):
@@ -100,7 +100,8 @@ class ReZeroModel(Module):
             # embed one hot
             one_hot = src[:, 0:22, :].argmax(axis=1)
             embedded = self.embedding(one_hot.long()).permute(0, 2, 1)
-            src[:, 0:22, :] = embedded
+            src[:, 0:20, :] = embedded
+            src = torch.cat((src[:,0:21,:],src[:,22:51,:] ), dim=1)
         
         src = self.bn(src) # in: bs x features x length
         
