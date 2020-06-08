@@ -126,9 +126,9 @@ if __name__ == "__main__":
     best_model_path = os.path.join("models", model_type, "best_model.pt")
     stats_path = os.path.join("stats", model_type, "stats.pkl")
 
-    if os.path.exists(best_model_path):
-        print("Model exists. Loading from {0}".format(best_model_path))
-        model = torch.load(best_model_path)
+    # if os.path.exists(best_model_path):
+    #     print("Model exists. Loading from {0}".format(best_model_path))
+    #     model = torch.load(best_model_path)
 
     else:
         print("NO BEST MODEL")

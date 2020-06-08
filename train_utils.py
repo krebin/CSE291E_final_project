@@ -21,18 +21,18 @@ def train(epochs, model, stats_path,
 
     fmt_string = "Epoch[{0}/{1}], Batch[{3}/{4}], Train Loss: {2}"
 
-    # # Load stats if path exists
-    # if os.path.exists(stats_path):
-    #     with open(stats_path, "rb") as f:
-    #         stats_dict = pkl.load(f)
-    #     print(stats_dict["best_epoch"])
-    #     start_epoch = stats_dict["next_epoch"]
-    #     min_val_loss = stats_dict["valid"][stats_dict["best_epoch"]]["loss"]
-    #     print("Stats exist. Loading from {0}. Starting from Epoch {1}".format(stats_path, start_epoch))
-    # else:
-    min_val_loss = np.inf
-    stats_dict = rec_dd()
-    start_epoch = 0
+    # Load stats if path exists
+    if os.path.exists(stats_path):
+        with open(stats_path, "rb") as f:
+            stats_dict = pkl.load(f)
+        print(stats_dict["best_epoch"])
+        start_epoch = stats_dict["next_epoch"]
+        min_val_loss = stats_dict["valid"][stats_dict["best_epoch"]]["loss"]
+        print("Stats exist. Loading from {0}. Starting from Epoch {1}".format(stats_path, start_epoch))
+    else:
+        min_val_loss = np.inf
+        stats_dict = rec_dd()
+        start_epoch = 0
 
     # See loss before training
     accs, val_loss = val(-1, model, val_loader, len_val, criterion, epochs, device, num_features, one_hot_embed)
@@ -40,7 +40,6 @@ def train(epochs, model, stats_path,
     # Update statistics dict
     stats_dict["valid"][-1]["acc"] = accs
     stats_dict["valid"][-1]["loss"] = val_loss
-    torch.cuda.empty_cache()
 
     model.train()
     for epoch in range(start_epoch, epochs):
@@ -62,10 +61,7 @@ def train(epochs, model, stats_path,
             Y = Y.view([-1, 700, 9])
             T = Y.argmax(dim=2).long().to(device)
 
-            # print("DEBUG: TRAIN--")
             outputs = model(X,device,one_hot_embed)
-            # print("DEBUG OUTPUT SIZE: ", outputs.size())
-            # print("DEBUG TARGET SIZE: ", T.size())
             loss = criterion(outputs.permute(0, 2, 1), T)
             train_loss += (loss.item() * len(X))
 
