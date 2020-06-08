@@ -1,3 +1,10 @@
+'''
+ReZero Model
+This code is a modified version of the ReZero source code provided 
+by the author's of ReZero. It can be found here:
+https://github.com/tbachlechner/ReZero-examples/blob/master/ReZero-Deep_Fast_Transformer.ipynb
+'''
+
 
 import numpy as np
 import time
@@ -20,7 +27,7 @@ torch.manual_seed(0)
 # Define the ReZero Transformer
 
 
-class ReZeroModel(Module):
+class ReZeroEncoderLayer(Module):
     r"""ReZero-TransformerEncoderLayer is made up of self-attn and feedforward network.
 
     Args:
@@ -36,11 +43,9 @@ class ReZeroModel(Module):
         >>> src = torch.rand(10, 32, 512)
         >>> out = encoder_layer(src)
     """
-
-    def __init__(self, num_features=50, nhead=5, dim_feedforward=2048, dropout=0.1, activation = "relu", 
+    def __init__(self, num_features=22, nhead=3, dim_feedforward=2048, dropout=0.1, activation = "relu", 
                  use_LayerNorm = True, init_resweight = 0, resweight_trainable = True):
-        super(ReZeroModel, self).__init__()
-        num_features = 50
+        super(ReZeroEncoderLayer, self).__init__()
         self.self_attn = MultiheadAttention(num_features, nhead, dropout=dropout)
         
         # Define the Resisdual Weight for ReZero
@@ -49,7 +54,7 @@ class ReZeroModel(Module):
         # Implementation of Feedforward model
         self.linear1 = Linear(num_features, dim_feedforward)
         self.dropout = Dropout(dropout)
-        self.linear2 = Linear(dim_feedforward, 9)
+        self.linear2 = Linear(dim_feedforward, num_features)
         self.use_LayerNorm = use_LayerNorm
         if self.use_LayerNorm != False:
             self.norm1 = LayerNorm(num_features)
@@ -65,22 +70,17 @@ class ReZeroModel(Module):
             self.activation = torch.tanh
         
         
-        self.embedding = nn.Embedding(22, 20)
-        self.full_embedding = nn.Embedding(51, 51)
-        self.bn = nn.BatchNorm1d(50)
+        # self.embedding = nn.Embedding(22, 20)
+        # self.full_embedding = nn.Embedding(51, 51)
+        # self.bn = nn.BatchNorm1d(51)
         
 
     def __setstate__(self, state):
         if 'activation' not in state:
             state['activation'] = F.relu
-        super(ReZeroModel, self).__setstate__(state)
-    
-    def _generate_square_subsequent_mask(self, mask):
-        mask = mask.bool().masked_fill(mask == 1, True)
-        mask = mask.masked_fill(mask != True, False)
-        return mask #torch.transpose(mask,0,1)
+        super(ReZeroEncoderLayer, self).__setstate__(state)
 
-    def forward(self, src, device, one_hot_embed, src_mask=None, src_key_padding_mask=None):
+    def forward(self, src, src_mask=None, src_key_padding_mask=None):
         # type: (Tensor, Optional[Tensor], Optional[Tensor]) -> Tensor
         r"""Pass the input through the encoder layer.
         Args:
@@ -92,27 +92,10 @@ class ReZeroModel(Module):
         """
         
         ## IN: bs x 700 x 51
-        # Set padding mask
-        pad = src[:,21,:] 
-        pad_mask = self._generate_square_subsequent_mask(pad.to(device))
-            
-        if (one_hot_embed == True):
-            # embed one hot
-            one_hot = src[:, 0:22, :].argmax(axis=1)
-            embedded = self.embedding(one_hot.long()).permute(0, 2, 1)
-            src[:, 0:20, :] = embedded
-            src = torch.cat((src[:,0:21,:],src[:,22:51,:] ), dim=1)
-        
-        src = self.bn(src) # in: bs x features x length
-        
-         
-        src = src.permute(2,0,1)  # permute for transformer. Need to undo this at end of fwd pass
         src2 = src
-    
-        
         if self.use_LayerNorm == "pre":
             src2 = self.norm1(src2)
-        src2 = self.self_attn(src2,src2,src2, key_padding_mask=pad_mask)[0]
+        src2 = self.self_attn(src2, src2, src2, attn_mask=src_mask,key_padding_mask=src_key_padding_mask)[0]
         # Apply the residual weight to the residual connection. This enables ReZero.
         src2 = self.resweight * src2
         src2 = self.dropout1(src2)
@@ -129,10 +112,83 @@ class ReZeroModel(Module):
         src2 = self.resweight * src2
         src2 = self.dropout2(src2)
         if self.use_LayerNorm == False:
-            #src = src + src2
-            src = src2
+            src = src + src2
         elif self.use_LayerNorm == "pre":
             src = src + src2
         elif self.use_LayerNorm == "post":
             src = self.norm1(src + src2)
-        return src.permute(1,0,2)
+        return src
+
+
+
+######################################################################
+# Define the model
+
+class ReZeroModel(torch.nn.Module):
+    def __init__(self, num_features, ntoken=22, nhead=1, nhid=2048, nlayers=1, dropout=0.1):
+        super(ReZeroModel, self).__init__()
+        from torch.nn import TransformerEncoder, TransformerEncoderLayer
+        compress_representation = 36
+        final_cats = 9
+        self.model_type = 'Transformer'
+        self.src_mask = None
+        encoder_layers = ReZeroEncoderLayer(compress_representation, nhead, nhid, dropout, 
+            activation = "relu", use_LayerNorm = False, init_resweight = 0, 
+            resweight_trainable = True)
+        self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
+        
+        self.encoder = torch.nn.Embedding(num_features,ntoken) 
+        self.ninp = num_features
+        self.decoder = torch.nn.Linear(compress_representation, final_cats)
+        self._reset_parameters()
+        self.init_weights()
+        self.linear_compress = torch.nn.Linear(num_features,compress_representation)
+        
+    def _generate_square_subsequent_mask(self, sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
+
+    def init_weights(self):
+        initrange = 0.1
+        self.encoder.weight.data.uniform_(-initrange, initrange)
+        self.decoder.bias.data.zero_()
+        self.decoder.weight.data.uniform_(-initrange, initrange)
+        
+    def _reset_parameters(self):
+        for p in self.parameters():
+            if p.dim() > 1:
+                xavier_uniform_(p)
+
+    def forward(self, src, device, one_hot_embed):
+        src = src.permute(2,0,1) # Correct transformer dims: seq_len x bs x features 
+        if self.src_mask is None or self.src_mask.size(0) != len(src):
+            device = src.device
+            mask = self._generate_square_subsequent_mask(len(src)).to(device)
+            self.src_mask = mask
+        src = self.linear_compress(src)
+        src = src * math.sqrt(self.ninp)
+        output = self.transformer_encoder(src, self.src_mask)
+        output = self.decoder(output).permute(1,0,2)
+        return output
+
+######################################################################
+# Positional Encoding
+
+class PositionalEncoding(torch.nn.Module):
+
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = torch.nn.Dropout(p=dropout)
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        x = x + self.pe[:x.size(0), :]
+        return self.dropout(x)

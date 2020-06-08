@@ -51,7 +51,6 @@ class LSTMModel(nn.Module):
         x = x.permute(0, 2, 1)
 
         # LSTM
-        # h_t = torch.zeros(2, x.shape[0], 250).to(device)
         O1, _ = self.lstm_1(x)
 
         # LSTM Block 1

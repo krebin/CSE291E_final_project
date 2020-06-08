@@ -120,8 +120,8 @@ if __name__ == "__main__":
                                            num_workers=num_workers,
                                            num_features=num_features)
     
-#     if not os.path.exists(model_type):
-#         os.mkdir(model_type)
+    if not os.path.exists(model_type):
+        os.mkdir(model_type)
 
     best_model_path = os.path.join("models", model_type, "best_model.pt")
     stats_path = os.path.join("stats", model_type, "stats.pkl")
@@ -137,16 +137,8 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
-<<<<<<< HEAD
 
     acc = test(model, test_loader,device,num_features,one_hot_embed,experiment)
-=======
-    # for param in model.rezero_5:
-    #     print(param)
-    # for param in model.rezero_5_2:
-    #     print(param)
-    acc = test(model, test_loader,device,num_features,one_hot_embed)
->>>>>>> master
     print(acc)
     
     with open(stats_path, "rb") as f:

@@ -40,6 +40,7 @@ def train(epochs, model, stats_path,
     # Update statistics dict
     stats_dict["valid"][-1]["acc"] = accs
     stats_dict["valid"][-1]["loss"] = val_loss
+    torch.cuda.empty_cache()
 
     model.train()
     for epoch in range(start_epoch, epochs):
@@ -61,7 +62,10 @@ def train(epochs, model, stats_path,
             Y = Y.view([-1, 700, 9])
             T = Y.argmax(dim=2).long().to(device)
 
+            # print("DEBUG: TRAIN--")
             outputs = model(X,device,one_hot_embed)
+            # print("DEBUG OUTPUT SIZE: ", outputs.size())
+            # print("DEBUG TARGET SIZE: ", T.size())
             loss = criterion(outputs.permute(0, 2, 1), T)
             train_loss += (loss.item() * len(X))
 
@@ -150,6 +154,7 @@ def val(epoch, model, val_loader, len_val, criterion, epochs, device, num_featur
             Y = Y.view([-1, 700, 9])
             T = Y.argmax(dim=2).long().to(device)
 
+            # print("DEBUG: VAL--", '-' * 30)
             outputs = model(X, device, one_hot_embed)
             batch_loss = criterion(outputs.permute(0, 2, 1), T).item()           
 
@@ -174,6 +179,7 @@ def val(epoch, model, val_loader, len_val, criterion, epochs, device, num_featur
     predictions = np.array(all_predictions)
 
     accs = np.mean(labels == predictions)
+    torch.cuda.empty_cache()
     return accs, loss
 
 
@@ -219,9 +225,9 @@ def test(model, test_loader, device, num_features, one_hot_embed, experiment):
     
      # Calc test precision, recall, and F1
     precision_recall_f1(predictions, labels)
-        
+    accs = np.mean(labels == predictions)
+
     # Evaluate loss, acc, conf. matrix, and class. report on devset
     class_report_conf_matrix(predictions, labels, experiment)
 
-    accs = np.mean(labels == predictions)
     return accs
