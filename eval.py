@@ -30,13 +30,21 @@ parser.add_argument(
     help='Choose a config file (default: \'base\')'
 )
 
+# ensemble
+parser.add_argument(
+    '--num_models',
+    default=1,
+    help='Choose the number of models to ensemble (default: 1)'
+)
+
 args = parser.parse_args()
 
 # grab values from arguments
 experiment = args.experiment
+num_models = int(args.num_models)
 
 # base architecture
-if experiment == "base1":
+if "base" in experiment:
     import base1_config as cfg
     from base_model import BaseModel as Model
 elif experiment == "prot_vec":
@@ -44,6 +52,9 @@ elif experiment == "prot_vec":
     from base_model import BaseModel as Model
 elif experiment == "pssm_only":
     import pssm_only_config as cfg
+    from base_model import BaseModel as Model
+elif experiment == "one_hot_only":
+    import one_hot_only_config as cfg
     from base_model import BaseModel as Model
 elif experiment == "prot_vec_baseline":
     import prot_vec_baseline_config as cfg
@@ -79,6 +90,8 @@ num_features = cfg["num_features"] # base=51, prot_vec=100
 one_hot_embed = cfg["one_hot_embed"]
 model_type = experiment
 
+models = []
+
 # if model_type == "prot_vec":
 #     prot_vec = True
 # else:
@@ -92,6 +105,8 @@ if __name__ == "__main__":
         cb513_data = json.load(open("CB513_prot_vec_only.json", "r"))
     elif experiment == "pssm_only":
         cb513_data = json.load(open("CB513_pssm_only.json", "r"))
+    elif experiment == "one_hot_only":
+        cb513_data = json.load(open("CB513_one_hot_only.json", "r"))
     elif experiment == "prot_vec_baseline":
         cb513_data = json.load(open("CB513_prot_vec_baseline.json", "r"))
     else:
@@ -117,25 +132,34 @@ if __name__ == "__main__":
 #     if not os.path.exists(model_type):
 #         os.mkdir(model_type)
 
-    best_model_path = os.path.join("models", model_type, "best_model.pt")
-    stats_path = os.path.join("stats", model_type, "stats.pkl")
+    models = []
 
-    if os.path.exists(best_model_path):
-        print("Model exists. Loading from {0}".format(best_model_path))
-        model = torch.load(best_model_path)
+    for model_num in range(1,num_models+1):
+        
+        best_model_path = os.path.join("models", model_type+str(model_num), "best_model.pt")
+        stats_path = os.path.join("stats", model_type+str(model_num), "stats.pkl")
 
+        if os.path.exists(best_model_path):
+            print("Model exists. Loading from {0}".format(best_model_path))
+            model = torch.load(best_model_path)
+        else:
+            print("NO BEST MODEL")
+            print("Exiting...")        
+            exit()
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device)
+        print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
+        
+        models.append(model)
+    
+    
+    # Use esemble test if more than one model
+    if num_models > 1:
+        acc = ensemble_test(models, test_loader, device, num_features, one_hot_embed)
     else:
-        print("NO BEST MODEL")
-        print("Exiting...")        
-        exit()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
-    print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
-    # for param in model.rezero_5:
-    #     print(param)
-    # for param in model.rezero_5_2:
-    #     print(param)
-    acc = test(model, test_loader,device,num_features,one_hot_embed)
+        acc = test(model, test_loader,device,num_features,one_hot_embed)
+
     print(acc)
     
     with open(stats_path, "rb") as f:
