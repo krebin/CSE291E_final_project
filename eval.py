@@ -59,6 +59,12 @@ elif experiment == "one_hot_only":
 elif experiment == "prot_vec_baseline":
     import prot_vec_baseline_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "lstm":
+    import base1_config as cfg
+    from lstm_model import LSTMModel as Model
+elif experiment == "rezero":
+    import base1_config as cfg
+    from rezero_model import ReZeroModel as Model
 elif experiment == "residual":
     import residual_config as cfg
     from residual_model import ResidualModel as Model
@@ -129,8 +135,8 @@ if __name__ == "__main__":
                                            num_workers=num_workers,
                                            num_features=num_features)
     
-#     if not os.path.exists(model_type):
-#         os.mkdir(model_type)
+    if not os.path.exists(model_type):
+        os.mkdir(model_type)
 
     models = []
 

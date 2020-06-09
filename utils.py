@@ -6,6 +6,10 @@ import os
 from PIL import Image
 import torch.nn.functional as F
 from data_loader import *
+import pandas as pd
+
+from sklearn.metrics import f1_score, precision_score, recall_score, confusion_matrix
+from seqeval.metrics import classification_report
 
 colors = ["midnightblue", "maroon", "darkgreen", "indigo", "black", "darkslateblue", "purple", "cyan"]
 temps = [0.1, 0.2, 0.7, 1.0, 1.5, 2.0]
@@ -85,6 +89,71 @@ def plot_acc(train_losses, valid_losses, arch="base"):
     path_name = os.path.join("plots", arch + "_acc.png")
     plt.savefig(path_name)
     # plt.show()
+    
+def precision_recall_f1(y_pred, y_true):
+    scores = {}
+    
+    # Micro
+    scores['precision_micro'] = precision_score(y_true, y_pred, average='micro')
+    scores['recall_micro']    = recall_score(y_true, y_pred, average='micro')
+    scores['f1_micro']        = f1_score(y_true, y_pred, average='micro')
+    print("test.precision_micro: ", scores['precision_micro']) 
+    print("test.recall_micro: ", scores['recall_micro']) 
+    print("test.f1_micro", scores['f1_micro']) 
+    
+    # Macro
+    scores['precision_macro']    = precision_score(y_true, y_pred, average='macro')
+    scores['recall_macro']       = recall_score(y_true, y_pred, average='macro')
+    scores['f1_macro']           = f1_score(y_true, y_pred, average='macro')
+    print("test.precision_macro: ", scores['precision_macro']) 
+    print("test.recall_macro: ", scores['recall_macro']) 
+    print("test.f1_macro: ", scores['f1_macro']) 
+    
+    # Weighted
+    scores['precision_weighted'] = precision_score(y_true, y_pred, average='weighted')
+    scores['recall_weighted']    = recall_score(y_true, y_pred, average='weighted')
+    scores['f1_weighted']        = f1_score(y_true, y_pred, average='weighted')
+    print("test.precision_weighted: ", scores['precision_weighted']) 
+    print("test.recall_weighted: ", scores['recall_weighted']) 
+    print("test.f1_weighted: ", scores['f1_weighted'])  
+    
+def class_report_conf_matrix(predictions, labels, experiment):
+    id_to_label = ['L', 'B', 'E', 'G', 'I', 'H', 'S', 'T', 'pad']
+    labels = [id_to_label[i] for i in labels.tolist()]
+    predictions = [id_to_label[i] for i in predictions.tolist()]
+    cl_report = classification_report(labels, predictions)
+    conf_mat = annot_confusion_matrix(labels, predictions)
+    print(f"Classification Report:\n {cl_report}")
+    print(f"Confusion Matrix:\n {conf_mat}")
+    
+    # Save test output
+    df = pd.DataFrame()
+    df['labels']      = labels
+    df['predictions'] = predictions
+    df.to_csv('stats/' + experiment + '/test_output.tsv', sep='\t', encoding='utf-8')
+    print("Sample output saved in: stats/" + experiment + "/test_output.tsv")
+    
+
+def annot_confusion_matrix(valid_tags, pred_tags):
+
+    """
+    Create an annotated confusion matrix by adding label
+    annotations and formatting to sklearn's `confusion_matrix`.
+    """
+
+    # Create header from unique tags
+    header = sorted(list(set(valid_tags + pred_tags)))
+
+    # Calculate the actual confusion matrix
+    matrix = confusion_matrix(valid_tags, pred_tags, labels=header)
+
+    # Final formatting touches for the string output
+    mat_formatted = [header[i] + "\t" + str(row) for i, row in enumerate(matrix)]
+    content = "\t" + " ".join(header) + "\n" + "\n".join(mat_formatted)
+
+    return content
+
+
     
 def print_stats(arch):
     with open("stats/{0}/stats.pkl".format(arch), "rb") as f:

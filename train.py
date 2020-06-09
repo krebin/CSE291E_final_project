@@ -51,6 +51,12 @@ elif experiment == "one_hot_only":
 elif experiment == "prot_vec_baseline":
     import prot_vec_baseline_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "lstm":
+    import base1_config as cfg
+    from lstm_model import LSTMModel as Model
+elif experiment == "rezero":
+    import base1_config as cfg
+    from rezero_model import ReZeroModel as Model
 elif experiment == "residual":
     import residual_config as cfg
     from residual_model import ResidualModel as Model
@@ -128,7 +134,7 @@ if __name__ == "__main__":
 
     ids = np.random.choice(len_train, len_train, replace=False)
 
-    if experiment == "dummy1":
+    if experiment == "dummy1" :
         train_loader, len_train = get_loader(protein_data=tr5534_data,
                                              ids=[0, 1, 2],
                                              batch_size=batch_size,
@@ -184,6 +190,7 @@ if __name__ == "__main__":
     else:
         model = Model(num_features=num_features).to(device)
 
+
     criterion = nn.CrossEntropyLoss(ignore_index=8)
     model.apply(init_weights)
     print(type(model))
@@ -203,7 +210,6 @@ if __name__ == "__main__":
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
 
     print(model)
-
     stats_dict, model = train(epochs, model, stats_path, train_loader, val_loader, optimizer, criterion,
                               len_train, len_val, latest_model_path, best_model_path, optim_path, device, 
                               num_features, one_hot_embed)
