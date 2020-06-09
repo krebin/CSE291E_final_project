@@ -51,6 +51,21 @@ elif experiment == "one_hot_only":
 elif experiment == "prot_vec_baseline":
     import prot_vec_baseline_config as cfg
     from base_model import BaseModel as Model
+elif experiment == "residual":
+    import residual_config as cfg
+    from residual_model import ResidualModel as Model
+elif experiment == "residual2":
+    import residual2_config as cfg
+    from residual_model import ResidualModel as Model
+elif experiment == "residual3":
+    import residual2_config as cfg
+    from residual_model import ResidualModel as Model
+elif experiment == "residual_bnorm":
+    import residual_config as cfg
+    from residual_bnorm_model import ResidualModel as Model
+elif experiment == "wavezero":
+    import wavezero_config as cfg
+    from wavezero_model import ResidualModel as Model
 else:
     import dummy1_config as cfg
     from base_model import BaseModel as Model
@@ -66,6 +81,9 @@ lr = cfg["lr"]
 num_features = cfg["num_features"] # base=51, prot_vec=100
 one_hot_embed = cfg["one_hot_embed"] # true if we have one-hot encoding, false if not (ProtVec)
 model_type = experiment
+
+if "residual" in experiment:
+    num_residual = cfg["num_residual"]
 
 # if model_type == "prot_vec":
 #     prot_vec = True
@@ -160,7 +178,12 @@ if __name__ == "__main__":
             pass
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Model(num_features=num_features).to(device)
+
+    if "residual" in experiment:
+        model = Model(num_features=num_features, num_residual=num_residual).to(device)
+    else:
+        model = Model(num_features=num_features).to(device)
+
     criterion = nn.CrossEntropyLoss(ignore_index=8)
     model.apply(init_weights)
     print(type(model))
@@ -178,6 +201,8 @@ if __name__ == "__main__":
 
     model.to(device)
     print("Model is using GPU: {0}".format(next(model.parameters()).is_cuda))
+
+    print(model)
 
     stats_dict, model = train(epochs, model, stats_path, train_loader, val_loader, optimizer, criterion,
                               len_train, len_val, latest_model_path, best_model_path, optim_path, device, 
