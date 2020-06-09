@@ -36,7 +36,7 @@ experiment = args.experiment
 
 
 # base architecture
-if experiment == "base1":
+if "base" in experiment:
     import base1_config as cfg
     from base_model import BaseModel as Model
 elif experiment == "prot_vec":
@@ -44,6 +44,9 @@ elif experiment == "prot_vec":
     from base_model import BaseModel as Model
 elif experiment == "pssm_only":
     import pssm_only_config as cfg
+    from base_model import BaseModel as Model
+elif experiment == "one_hot_only":
+    import one_hot_only_config as cfg
     from base_model import BaseModel as Model
 elif experiment == "prot_vec_baseline":
     import prot_vec_baseline_config as cfg
@@ -105,6 +108,9 @@ if __name__ == "__main__":
     elif experiment == "pssm_only":
         tr5534_data = json.load(open("TR5534_pssm_only.json", "r"))
         cb513_data = json.load(open("CB513_pssm_only.json", "r"))
+    elif experiment == "one_hot_only":
+        tr5534_data = json.load(open("TR5534_one_hot_only.json", "r"))
+        cb513_data = json.load(open("CB513_one_hot_only.json", "r"))
     elif experiment == "prot_vec_baseline":
         tr5534_data = json.load(open("TR5534_prot_vec_baseline.json", "r"))
         cb513_data = json.load(open("CB513_prot_vec_baseline.json", "r"))
