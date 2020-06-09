@@ -179,7 +179,7 @@ def val(epoch, model, val_loader, len_val, criterion, epochs, device, num_featur
     return accs, loss
 
 
-def test(model, test_loader, device, num_features, one_hot_embed, experiment):
+def test(model, test_loader, device, num_features, one_hot_embed, experiment="Name of experiment"):
     all_labels = []
     all_predictions = []
     model.eval()
